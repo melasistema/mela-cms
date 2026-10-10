@@ -6,8 +6,8 @@
 #   2. release-please opens or updates a "release PR" that writes CHANGELOG.md
 #      from those commits and proposes the next version.
 #   3. Merging the release PR creates the vX.Y.Z tag and the GitHub Release.
-#      Packagist picks the tag up through its GitHub hook, and client sites get
-#      the new version with `composer update melasistema/mela-cms`.
+#      Client sites get the new version with
+#      `composer update melasistema/mela-cms`.
 #
 # Settings live in release-please-config.json; the last released version is
 # tracked in .release-please-manifest.json (maintained by release-please).
