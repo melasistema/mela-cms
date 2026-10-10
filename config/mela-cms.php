@@ -1,6 +1,7 @@
 <?php
 
 use Melasistema\MelaCms\Filament\Pages\EditProfile;
+use Melasistema\MelaCms\Filament\Pages\ManageLanguages;
 use Melasistema\MelaCms\Filament\Resources\Users\UserResource;
 
 return [
@@ -10,11 +11,28 @@ return [
     | Locales
     |--------------------------------------------------------------------------
     |
-    | The languages the site is published in. The first entry is the default.
+    | The languages the site is published in. The first entry is the default
+    | language, served at the root of the site.
+    |
+    | These are the starting values. Once an admin saves the Languages page in
+    | the panel, what was saved there is used instead.
     |
     */
 
     'locales' => ['en'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Panel Language
+    |--------------------------------------------------------------------------
+    |
+    | The language of the admin panel, independent of the site languages.
+    | null uses the app locale. Also a starting value: the Languages page
+    | overrides it.
+    |
+    */
+
+    'admin_locale' => null,
 
     /*
     |--------------------------------------------------------------------------
@@ -37,6 +55,20 @@ return [
 
     'resources' => [
         'users' => UserResource::class,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Core Pages
+    |--------------------------------------------------------------------------
+    |
+    | The admin pages the core adds to the panel. They work like the resources
+    | above: null removes a page, your own class replaces it.
+    |
+    */
+
+    'pages' => [
+        'languages' => ManageLanguages::class,
     ],
 
     /*

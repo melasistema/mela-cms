@@ -12,7 +12,8 @@ This site is built on [MelaCMS](https://github.com/melasistema/mela-cms). This s
 - Laravel 13, PHP 8.4, Node 24.
 - Admin: Filament 5 at `/admin` (path set in `config/mela-cms.php`). The panel is registered by the core and discovers this site's classes in `app/Filament/Resources`, `app/Filament/Pages` and `app/Filament/Widgets`.
 - Public site: Blade views, Tailwind via Vite, Alpine for interactions. No Inertia. Vue is not installed; add it only when a page needs a component island.
-- Site locales are listed in `config/mela-cms.php`.
+- Site languages are chosen by an admin on the core's Languages page (`/admin/languages`); `locales` in `config/mela-cms.php` is only the starting value. Read them through `app(\Melasistema\MelaCms\Languages::class)` (`all()`, `default()`, `translations()`, `has()`), never from the config. The first language is the default.
+- The admin panel has its own language, also set on that page. To change the page, extend `Melasistema\MelaCms\Filament\Pages\ManageLanguages` and name the class under `pages` in `config/mela-cms.php`; `null` removes it.
 - The user model uses `Melasistema\MelaCms\Concerns\HasCmsAccess`; check roles with `$user->hasRole(...)`.
 - The core provides the profile page (`/admin/profile`), where each user edits their own name, email and password. To add fields, extend `Melasistema\MelaCms\Filament\Pages\EditProfile`, override `form()`, and set the class as `profile_page` in `config/mela-cms.php`.
 - The core provides the Users screen (`/admin/users`); do not build another one. To add user fields, extend `Melasistema\MelaCms\Filament\Resources\Users\UserResource`, override `formComponents()` or `tableColumns()`, and set the class as `resources.users` in `config/mela-cms.php`. To change who may manage users, register a policy for the user model with `Gate::policy()` in `AppServiceProvider`.

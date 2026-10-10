@@ -13,6 +13,7 @@
     ],
     "require": {
         "php": "^8.4",
+        "ext-intl": "*",
         "filament/filament": "^5.10",
         "illuminate/contracts": "^13.0",
         "illuminate/support": "^13.0",

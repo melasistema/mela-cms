@@ -16,6 +16,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Melasistema\MelaCms\Http\Middleware\SetAdminLocale;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -37,6 +38,8 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: $namespace.'Filament\\Pages')
             ->pages([
                 Dashboard::class,
+                // The core's own pages, removed or replaced the same way.
+                ...array_values(array_filter(config('mela-cms.pages'))),
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: $namespace.'Filament\\Widgets')
             ->widgets([
@@ -53,6 +56,8 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            // Persistent, so Livewire requests are in the admin language too.
+            ->middleware([SetAdminLocale::class], isPersistent: true)
             ->authMiddleware([
                 Authenticate::class,
             ]);

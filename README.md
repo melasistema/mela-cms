@@ -32,8 +32,10 @@ MelaCMS takes the other route:
 | Profile page: every user changes their own name, email and password | Available |
 | `mela:install` and `mela:update` commands | Available |
 | CI, release and deploy workflows for client sites | Available, not yet proven on a live site |
-| Site locales | Stored in the config; nothing reads them yet |
-| Translatable content and localized routes | Planned |
+| Languages page: site languages, default language, admin panel language | Available |
+| Admin panel in the chosen language | Available for Filament's own texts; the core's own labels are English only |
+| Localized URLs (`/it/...`) and a language switcher | Planned |
+| Translatable content | Planned |
 | Content model, media, SEO | Planned |
 
 ## Requirements
@@ -113,8 +115,10 @@ If the email belongs to an existing user, that user keeps their password and gai
 
 | Key | Default | Meaning |
 | :--- | :--- | :--- |
-| `locales` | `['en']` | Languages the site is published in. The first is the default |
+| `locales` | `['en']` | Languages the site is published in. The first is the default. A starting value: see [Languages](#languages) |
+| `admin_locale` | `null` | Language of the admin panel. `null` uses the app locale. Also a starting value |
 | `admin_path` | `admin` | URL path of the admin panel |
+| `pages` | `['languages' => ManageLanguages::class]` | The admin pages the core adds. Works like `resources` |
 | `profile_page` | `EditProfile::class` | The page where a user edits their own account. `null` removes it; your own class replaces it |
 | `resources` | `['users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
 
@@ -194,6 +198,34 @@ class UserResource extends CoreUserResource
 Every user, whatever their role, has a profile page at `/admin/profile`, reached from the user menu. They can change their name, email and password there; changing the email or the password asks for the current password.
 
 To add fields, extend `Melasistema\MelaCms\Filament\Pages\EditProfile`, override `form()`, and set your class as `profile_page` in `config/mela-cms.php`. Set it to `null` to remove the page.
+
+### Languages
+
+The core adds a **Languages** page at `/admin/languages`, for super-admins and admins. It holds three choices:
+
+| Choice | Meaning |
+| :--- | :--- |
+| Site languages | The languages the site is published in |
+| Default language | The one served at the root of the site |
+| Admin panel language | The language of the panel. It does not have to be a site language |
+
+`locales` and `admin_locale` in `config/mela-cms.php` are the starting values. Once the page has been saved, the saved values are used and the config entries are ignored. They are stored in the `mela_settings` table.
+
+Read the languages in site code through `Melasistema\MelaCms\Languages`, never from the config:
+
+```php
+use Melasistema\MelaCms\Languages;
+
+$languages = app(Languages::class);
+
+$languages->all();          // ['en', 'it'], the default first
+$languages->default();      // 'en'
+$languages->translations(); // ['it']
+$languages->has('it');      // true
+Languages::name('it');      // 'Italiano'
+```
+
+To change the page, extend `Melasistema\MelaCms\Filament\Pages\ManageLanguages` (its fields are in `formComponents()`) and name your class under `pages` in the config. Set `'languages' => null` to remove it.
 
 ## Updating the core
 

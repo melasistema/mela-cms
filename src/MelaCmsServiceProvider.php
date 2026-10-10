@@ -16,9 +16,12 @@ class MelaCmsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/mela-cms.php', 'mela-cms');
-        $this->mergeCoreResources();
+        $this->mergeCoreScreens('resources');
+        $this->mergeCoreScreens('pages');
 
         $this->app->singleton(Project::class, fn () => new Project($this->app->basePath()));
+        $this->app->scoped(Settings::class);
+        $this->app->scoped(Languages::class);
 
         $this->app->register(AdminPanelProvider::class);
     }
@@ -48,12 +51,12 @@ class MelaCmsServiceProvider extends ServiceProvider
 
     /**
      * mergeConfigFrom() merges one level deep. A site whose published config
-     * predates a core resource would otherwise never get that resource.
+     * predates a core resource or page would otherwise never get it.
      */
-    private function mergeCoreResources(): void
+    private function mergeCoreScreens(string $key): void
     {
-        $defaults = (require __DIR__.'/../config/mela-cms.php')['resources'];
+        $defaults = (require __DIR__.'/../config/mela-cms.php')[$key];
 
-        config(['mela-cms.resources' => [...$defaults, ...config('mela-cms.resources')]]);
+        config(["mela-cms.{$key}" => [...$defaults, ...config("mela-cms.{$key}")]]);
     }
 }
