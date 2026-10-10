@@ -37,8 +37,9 @@ MelaCMS takes the other route:
 | Localized URLs: default language at the root, the others at `/it/...` or `it.example.com` | Available |
 | Language switcher data and `hreflang` tags | Available |
 | Translatable content: JSON columns, one form with a tab per language | Available |
-| Settings page: site name and description, contact details, social profiles | Available |
-| Content model, media, SEO | Planned |
+| Settings page: site name, description and share image, contact details, social profiles | Available |
+| Media library: upload, image sizes, a form field to pick a file | Available |
+| Content model, SEO | Planned |
 
 ## Requirements
 
@@ -46,6 +47,7 @@ MelaCMS takes the other route:
 - Laravel 13
 - Node 24, for the site's asset build
 - A database supported by Laravel
+- The GD or Imagick PHP extension with WebP support, for the image sizes of the media library
 
 ## Installation
 
@@ -87,8 +89,9 @@ Then uncomment the two `registries` blocks in the site's `.github/dependabot.yml
 3. Adds `implements FilamentUser` and the `HasCmsAccess` trait to `app/Models/User.php`. Without them nobody can log in to the admin.
 4. Creates the roles and the super-admin account.
 5. Publishes Filament's assets and adds `@php artisan filament:upgrade` to the `post-autoload-dump` scripts in `composer.json`, so the assets follow every Composer install.
-6. Copies the workflow templates into `.github/`.
-7. Adds the MelaCMS section to `AGENTS.md` and `CLAUDE.md`.
+6. Links `public/storage` to `storage/app/public`, where the media library keeps its files.
+7. Copies the workflow templates into `.github/`.
+8. Adds the MelaCMS section to `AGENTS.md` and `CLAUDE.md`.
 
 The command is safe to run again. Each step skips what is already in place, and a workflow file you have changed is kept unless you confirm replacing it.
 
@@ -123,7 +126,8 @@ If the email belongs to an existing user, that user keeps their password and gai
 | `admin_path` | `admin` | URL path of the admin panel |
 | `pages` | `['settings' => ManageSettings::class, 'languages' => ManageLanguages::class]` | The admin pages the core adds. Works like `resources` |
 | `profile_page` | `EditProfile::class` | The page where a user edits their own account. `null` removes it; your own class replaces it |
-| `resources` | `['users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
+| `resources` | `['media' => MediaResource::class, 'users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
+| `media` | See [Media](#media) | Disk, directory, accepted types, maximum size and image sizes of the media library |
 
 ## Building a site
 
@@ -140,8 +144,8 @@ Everything specific to the site stays in the site's repository: models, migratio
 | Role | Access |
 | :--- | :--- |
 | `super-admin` | Passes every authorization check |
-| `admin` | Can enter the admin panel and manage users, except super-admin accounts |
-| `editor` | Can enter the admin panel. Cannot see the users screen |
+| `admin` | Can enter the admin panel, use the media library and manage users, except super-admin accounts |
+| `editor` | Can enter the admin panel and use the media library. Cannot see the users, languages and settings screens |
 
 Roles are provided by [spatie/laravel-permission](https://github.com/spatie/laravel-permission), so the usual methods work on the user model:
 
@@ -315,7 +319,7 @@ The core adds a **Settings** page at `/admin/settings`, for super-admins and adm
 
 | Section | Fields | Read as |
 | :--- | :--- | :--- |
-| Site | Name and description, one per site language | `site.name`, `site.description` |
+| Site | Name and description, one per site language; share image | `site.name`, `site.description`, `site.share_image` |
 | Contact | Email, phone, address | `site.contact.email`, `site.contact.phone`, `site.contact.address` |
 | Social profiles | Facebook, Instagram, LinkedIn, X, YouTube, TikTok | `site.social.instagram`, ... |
 
@@ -329,6 +333,7 @@ $settings = app(Settings::class);
 $settings->get('site.contact.email');                    // 'info@example.com', or null
 $settings->get('site.contact.phone', '-');               // with a default
 $settings->translated('site.name', config('app.name'));  // in the language of the request
+Media::find($settings->get('site.share_image'));         // a file of the media library, or null
 array_filter($settings->get('site.social', []));         // ['instagram' => 'https://...'], only the ones filled in
 ```
 
@@ -370,6 +375,116 @@ Wrap a field in `Translations::make()` to have it per language. `socialNetworks(
 
 All settings are stored in the `mela_settings` table and read with one query per request.
 
+### Media
+
+The core adds a **Media** library at `/admin/media`, for every role. A file is uploaded once, several at a time if needed, and can then be used by any record of the site. Each file has a name and, for an image, an alternative text per site language.
+
+Every image gets these sizes at upload, as WebP files next to the original:
+
+| Size | Result |
+| :--- | :--- |
+| `thumb` | 400 × 400, cropped to fill the square |
+| `medium` | 800 wide, same proportions |
+| `large` | 1600 wide, same proportions |
+
+An image is never enlarged, and the original is kept as uploaded. Animated GIFs, PDFs and other documents keep the original only.
+
+#### Giving a model an image
+
+Add a nullable foreign key to the `mela_media` table, and a relation:
+
+```php
+// migration
+$table->foreignId('cover_id')->nullable()->constrained('mela_media')->nullOnDelete();
+$table->json('gallery')->nullable();
+```
+
+```php
+use Melasistema\MelaCms\Models\Media;
+
+class Article extends Model
+{
+    protected function casts(): array
+    {
+        return ['gallery' => 'array'];
+    }
+
+    public function cover(): BelongsTo
+    {
+        return $this->belongsTo(Media::class, 'cover_id');
+    }
+
+    public function galleryMedia(): Collection
+    {
+        return Media::inOrder($this->gallery);   // skips a file that was deleted
+    }
+}
+```
+
+In the Filament form, `MediaPicker` picks a file from the library or uploads a new one into it:
+
+```php
+use Melasistema\MelaCms\Filament\Forms\MediaPicker;
+
+MediaPicker::make('cover_id')->images(),             // saves the id of the file
+MediaPicker::make('gallery')->images()->multiple(),  // saves a list of ids
+```
+
+`images()` limits the field to images. `MediaPicker` extends Filament's `Select`, so `required()`, `label()` and the rest work as usual.
+
+In a Blade view:
+
+```blade
+@if ($article->cover)
+    <img
+        src="{{ $article->cover->url('large') }}"
+        srcset="{{ $article->cover->srcset() }}"
+        sizes="(min-width: 1024px) 800px, 100vw"
+        width="{{ $article->cover->width }}"
+        height="{{ $article->cover->height }}"
+        alt="{{ $article->cover->alt }}"
+    >
+@endif
+```
+
+| Method | Returns |
+| :--- | :--- |
+| `url()` | The address of the original file |
+| `url('thumb')` | The address of a size. A file without that size gives the original |
+| `srcset()` | The sizes that keep the proportions, for the `srcset` attribute. `null` when there are none |
+| `alt` | The alternative text in the language of the request, with the default language as fallback |
+| `isImage()` | Whether the file is an image |
+
+#### Configuration
+
+```php
+// config/mela-cms.php
+'media' => [
+    'disk' => 'public',
+    'directory' => 'media',
+    'max_size' => 10240,   // kilobytes
+    'accepted_types' => ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'],
+    'conversions' => [
+        'thumb' => ['width' => 400, 'height' => 400],
+        'medium' => ['width' => 800],
+        'large' => ['width' => 1600],
+    ],
+    'quality' => 80,
+],
+```
+
+A size with a width and a height is cropped to fill them; with one of the two it keeps its proportions. After changing `conversions` or `quality`, make the sizes of the files already uploaded again:
+
+```bash
+php artisan mela:media-regenerate
+```
+
+The disk must be public. With the default one the files are served through the `public/storage` link, which `mela:install` and the deploy workflow create. PHP's `upload_max_filesize` and `post_max_size` must allow `max_size`, and Livewire has its own limit of 12 MB for an upload.
+
+SVG is not accepted by default: an SVG file can carry a script, and it would run on your domain. Add `image/svg+xml` to `accepted_types` only if everyone who can log in is trusted.
+
+To change the screen, extend `Melasistema\MelaCms\Filament\Resources\Media\MediaResource`, override `formComponents()` or `tableColumns()`, and set your class as `resources.media` in the config. To change who may use the library, register your own policy for `Media` with `Gate::policy()`.
+
 ## Updating the core
 
 ```bash
@@ -377,7 +492,7 @@ composer update melasistema/mela-cms
 php artisan mela:update
 ```
 
-`mela:update` runs new core migrations, restores any missing core role and refreshes the MelaCMS section of `AGENTS.md` and `CLAUDE.md`. It never overwrites a file the site owns: it lists the workflow files that differ from the core templates and leaves the decision to you. Run `mela:install` again to review them one by one.
+`mela:update` runs new core migrations, restores any missing core role, links `public/storage` if the link is missing and refreshes the MelaCMS section of `AGENTS.md` and `CLAUDE.md`. It never overwrites a file the site owns: it lists the workflow files that differ from the core templates and leaves the decision to you. Run `mela:install` again to review them one by one.
 
 The installed `.github/dependabot.yml` opens a pull request on the site whenever a new core version is released.
 

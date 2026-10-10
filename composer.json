@@ -17,6 +17,7 @@
         "filament/filament": "^5.10",
         "illuminate/contracts": "^13.0",
         "illuminate/support": "^13.0",
+        "intervention/image": "^4.3",
         "spatie/laravel-permission": "^8.3",
         "spatie/laravel-translatable": "^6.14"
     },

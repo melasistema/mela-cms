@@ -7,12 +7,13 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Support\Icons\Heroicon;
+use Melasistema\MelaCms\Filament\Forms\MediaPicker;
 use Melasistema\MelaCms\Filament\Forms\Translations;
 use Melasistema\MelaCms\Settings;
 
 /**
- * Where an admin fills in what every site has: its name and description, the
- * contact details and the social profiles.
+ * Where an admin fills in what every site has: its name, description and
+ * share image, the contact details and the social profiles.
  *
  * Everything in the form is saved under `site`, each field at its own name:
  * the field `contact.email` is read back as `site.contact.email`. A site adds
@@ -48,6 +49,10 @@ class ManageSettings extends SettingsPage
                             ->rows(3)
                             ->maxLength(300),
                     ]),
+                    MediaPicker::make('share_image')
+                        ->label('Share image')
+                        ->helperText('Shown when a page without an image of its own is shared on a social network.')
+                        ->images(),
                 ]),
             Section::make('Contact')
                 ->columns(2)

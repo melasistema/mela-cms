@@ -13,6 +13,7 @@ use Melasistema\MelaCms\Install\AgentGuide;
 use Melasistema\MelaCms\Install\ComposerScripts;
 use Melasistema\MelaCms\Install\Project;
 use Melasistema\MelaCms\Install\Roles;
+use Melasistema\MelaCms\Install\StorageLink;
 use Melasistema\MelaCms\Install\StubPublisher;
 use Melasistema\MelaCms\Install\StubStatus;
 use Melasistema\MelaCms\Install\UserModelPatcher;
@@ -46,6 +47,7 @@ class InstallCommand extends Command
         ComposerScripts $composerScripts,
         StubPublisher $stubs,
         AgentGuide $agentGuide,
+        StorageLink $storageLink,
     ): int {
         if (! $this->writeConfig()) {
             return self::FAILURE;
@@ -65,6 +67,10 @@ class InstallCommand extends Command
 
         if (! $composerScripts->ensureFilamentUpgrade()) {
             $this->components->warn('Could not update composer.json. Add "'.ComposerScripts::SCRIPT.'" to its post-autoload-dump scripts.');
+        }
+
+        if (! $storageLink->ensure()) {
+            $this->components->warn('Could not link public/storage. Run `php artisan storage:link`, or uploaded files will not show.');
         }
 
         $this->publishStubs($stubs);

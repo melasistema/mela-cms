@@ -3,6 +3,7 @@
 use Melasistema\MelaCms\Filament\Pages\EditProfile;
 use Melasistema\MelaCms\Filament\Pages\ManageLanguages;
 use Melasistema\MelaCms\Filament\Pages\ManageSettings;
+use Melasistema\MelaCms\Filament\Resources\Media\MediaResource;
 use Melasistema\MelaCms\Filament\Resources\Users\UserResource;
 
 return [
@@ -70,6 +71,7 @@ return [
     */
 
     'resources' => [
+        'media' => MediaResource::class,
         'users' => UserResource::class,
     ],
 
@@ -100,5 +102,40 @@ return [
     */
 
     'profile_page' => EditProfile::class,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Media Library
+    |--------------------------------------------------------------------------
+    |
+    | Where uploaded files are stored and what may be uploaded. The disk is
+    | one of config/filesystems.php and must be public. `max_size` is in
+    | kilobytes.
+    |
+    | Each conversion is a size made of every image at upload, as a WebP file.
+    | With a width and a height the image is cropped to fill them; with one of
+    | the two it keeps its proportions. An image is never enlarged. After a
+    | change here, run `php artisan mela:media-regenerate`.
+    |
+    */
+
+    'media' => [
+        'disk' => 'public',
+        'directory' => 'media',
+        'max_size' => 10240,
+        'accepted_types' => [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif',
+            'application/pdf',
+        ],
+        'conversions' => [
+            'thumb' => ['width' => 400, 'height' => 400],
+            'medium' => ['width' => 800],
+            'large' => ['width' => 1600],
+        ],
+        'quality' => 80,
+    ],
 
 ];
