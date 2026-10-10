@@ -13,8 +13,10 @@
     ],
     "require": {
         "php": "^8.4",
+        "filament/filament": "^5.10",
         "illuminate/contracts": "^13.0",
-        "illuminate/support": "^13.0"
+        "illuminate/support": "^13.0",
+        "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {
         "laravel/pint": "^1.32",
