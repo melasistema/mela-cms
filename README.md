@@ -34,8 +34,9 @@ MelaCMS takes the other route:
 | CI, release and deploy workflows for client sites | Available, not yet proven on a live site |
 | Languages page: site languages, default language, admin panel language | Available |
 | Admin panel in the chosen language | Available for Filament's own texts; the core's own labels are English only |
-| Localized URLs (`/it/...`) and a language switcher | Planned |
-| Translatable content | Planned |
+| Localized URLs: default language at the root, the others at `/it/...` or `it.example.com` | Available |
+| Language switcher data and `hreflang` tags | Available |
+| Translatable content: JSON columns, one form with a tab per language | Available |
 | Content model, media, SEO | Planned |
 
 ## Requirements
@@ -116,6 +117,7 @@ If the email belongs to an existing user, that user keeps their password and gai
 | Key | Default | Meaning |
 | :--- | :--- | :--- |
 | `locales` | `['en']` | Languages the site is published in. The first is the default. A starting value: see [Languages](#languages) |
+| `locale_urls` | `'path'` | Where the other languages live: `'path'` for `example.com/it`, `'subdomain'` for `it.example.com` |
 | `admin_locale` | `null` | Language of the admin panel. `null` uses the app locale. Also a starting value |
 | `admin_path` | `admin` | URL path of the admin panel |
 | `pages` | `['languages' => ManageLanguages::class]` | The admin pages the core adds. Works like `resources` |
@@ -224,6 +226,85 @@ $languages->translations(); // ['it']
 $languages->has('it');      // true
 Languages::name('it');      // 'Italiano'
 ```
+
+#### Language URLs
+
+The default language is at the root of the site. Every other language has a prefix:
+
+| URL | Language, with `en` as the default |
+| :--- | :--- |
+| `example.com/about` | English |
+| `example.com/it/about` | Italian |
+| `example.com/en/about` | Redirects to `example.com/about` |
+
+Write each route once, without a language in it:
+
+```php
+Route::get('/about', AboutController::class)->name('about');
+```
+
+On `/it/about` the same route runs with the app locale set to `it`, and `route()`, `url()`, redirects and pagination links keep the `/it` prefix. `asset()` and Vite URLs stay at the root. When an admin changes the default language, the new one moves to the root and the old one gets a prefix at once: there are no routes to rebuild and no cache to clear.
+
+To put the languages on subdomains (`it.example.com`), set `'locale_urls' => 'subdomain'` in `config/mela-cms.php`, point each subdomain to the app, and set `SESSION_DOMAIN=.example.com` if a login has to be shared between them.
+
+For a language switcher and for `hreflang`:
+
+```blade
+<head>
+    @hreflang
+</head>
+
+@foreach (app(\Melasistema\MelaCms\Languages::class)->alternates() as $locale => $url)
+    <a href="{{ $url }}">{{ \Melasistema\MelaCms\Languages::name($locale) }}</a>
+@endforeach
+```
+
+```php
+$languages->current();              // 'it' on /it/about
+$languages->alternates();           // ['en' => 'https://example.com/about', 'it' => 'https://example.com/it/about']
+$languages->url('it', '/contact');  // 'https://example.com/it/contact'
+```
+
+The admin panel answers under a prefix too (`/it/admin`), in the admin language. A Livewire component on a translated page sends its updates to the root of the site: links it renders again during an update lose the prefix unless they are built with `$languages->url()`.
+
+#### Translatable content
+
+Translations are stored in the model's own table, in JSON columns, through [spatie/laravel-translatable](https://spatie.be/docs/laravel-translatable) (installed with the core). No translation tables, and no data moves when the default language changes.
+
+```php
+// Migration
+$table->json('title');
+$table->json('body')->nullable();
+
+// Model
+use Spatie\Translatable\HasTranslations;
+
+class Article extends Model
+{
+    use HasTranslations;
+
+    public array $translatable = ['title', 'body'];
+}
+```
+
+`$article->title` is the title in the language of the request. A translation that is missing falls back to the default language of the site.
+
+In a Filament form, wrap the translatable fields in `Translations::make()` and write each field once:
+
+```php
+use Melasistema\MelaCms\Filament\Forms\Translations;
+
+Translations::make([
+    TextInput::make('title')->required(),
+    RichEditor::make('body'),
+]),
+```
+
+| Behaviour | Detail |
+| :--- | :--- |
+| Tabs | One per site language, the default first. A site in one language gets the fields without tabs |
+| `required()` | Applies to the default language only. Every other rule applies to each language |
+| Removed language | Its translations stay in the database and come back if the language is added again |
 
 To change the page, extend `Melasistema\MelaCms\Filament\Pages\ManageLanguages` (its fields are in `formComponents()`) and name your class under `pages` in the config. Set `'languages' => null` to remove it.
 

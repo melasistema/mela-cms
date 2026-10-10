@@ -23,6 +23,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Language URLs
+    |--------------------------------------------------------------------------
+    |
+    | Where the other languages live. The default language is always at the
+    | root of the site.
+    |
+    | 'path'       example.com/it
+    | 'subdomain'  it.example.com (each subdomain must point to this app)
+    |
+    */
+
+    'locale_urls' => 'path',
+
+    /*
+    |--------------------------------------------------------------------------
     | Admin Panel Language
     |--------------------------------------------------------------------------
     |

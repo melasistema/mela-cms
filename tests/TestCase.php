@@ -24,6 +24,7 @@ use Orchestra\Testbench\Attributes\WithMigration;
 use Orchestra\Testbench\TestCase as Orchestra;
 use RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider;
 use Spatie\Permission\PermissionServiceProvider;
+use Spatie\Translatable\TranslatableServiceProvider;
 
 #[WithMigration]
 abstract class TestCase extends Orchestra
@@ -61,6 +62,7 @@ abstract class TestCase extends Orchestra
             WidgetsServiceProvider::class,
             FilamentServiceProvider::class,
             PermissionServiceProvider::class,
+            TranslatableServiceProvider::class,
             MelaCmsServiceProvider::class,
         ];
     }
