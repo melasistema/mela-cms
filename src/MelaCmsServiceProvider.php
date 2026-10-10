@@ -5,15 +5,19 @@ namespace Melasistema\MelaCms;
 use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Melasistema\MelaCms\Console\InstallCommand;
 use Melasistema\MelaCms\Console\RegenerateMediaCommand;
 use Melasistema\MelaCms\Console\UpdateCommand;
 use Melasistema\MelaCms\Enums\Role;
 use Melasistema\MelaCms\Filament\AdminPanelProvider;
+use Melasistema\MelaCms\Http\Controllers\PageController;
 use Melasistema\MelaCms\Http\Middleware\SetLocale;
 use Melasistema\MelaCms\Install\Project;
 use Melasistema\MelaCms\Models\Media;
+use Melasistema\MelaCms\Models\Page;
+use Melasistema\MelaCms\Policies\ContentPolicy;
 use Melasistema\MelaCms\Policies\MediaPolicy;
 use Melasistema\MelaCms\Policies\UserPolicy;
 use Spatie\Translatable\Translatable;
@@ -45,12 +49,18 @@ class MelaCmsServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'mela-cms');
 
         // Last of the global middleware: after the proxies are trusted, before
         // the request is routed.
         $this->app->make(Kernel::class)->pushMiddleware(SetLocale::class);
 
         Blade::directive('hreflang', fn () => '<?php echo app(\\'.Languages::class.'::class)->hreflang(); ?>');
+        Blade::directive('richtext', fn (string $expression) => '<?php echo \\'.RichContent::class."::html({$expression}); ?>");
+
+        // The pages of the site, at every address that no other route takes.
+        // A fallback route of the site replaces this one.
+        Route::fallback(PageController::class)->middleware('web');
 
         // A super-admin passes every authorization check.
         Gate::before(fn ($user) => method_exists($user, 'hasRole') && $user->hasRole(Role::SuperAdmin->value) ? true : null);
@@ -59,6 +69,7 @@ class MelaCmsServiceProvider extends ServiceProvider
         // it with its own Gate::policy() call.
         Gate::policy(config('auth.providers.users.model'), UserPolicy::class);
         Gate::policy(Media::class, MediaPolicy::class);
+        Gate::policy(Page::class, ContentPolicy::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([

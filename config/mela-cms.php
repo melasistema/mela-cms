@@ -4,6 +4,7 @@ use Melasistema\MelaCms\Filament\Pages\EditProfile;
 use Melasistema\MelaCms\Filament\Pages\ManageLanguages;
 use Melasistema\MelaCms\Filament\Pages\ManageSettings;
 use Melasistema\MelaCms\Filament\Resources\Media\MediaResource;
+use Melasistema\MelaCms\Filament\Resources\Pages\PageResource;
 use Melasistema\MelaCms\Filament\Resources\Users\UserResource;
 
 return [
@@ -71,6 +72,7 @@ return [
     */
 
     'resources' => [
+        'pages' => PageResource::class,
         'media' => MediaResource::class,
         'users' => UserResource::class,
     ],
@@ -102,6 +104,20 @@ return [
     */
 
     'profile_page' => EditProfile::class,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Public Pages
+    |--------------------------------------------------------------------------
+    |
+    | With true, the core answers every address that no route of the site
+    | matches with the published page at that address, shown by the view
+    | resources/views/pages/{template}.blade.php. The routes of the site
+    | always come first. Set it to false to serve the pages yourself.
+    |
+    */
+
+    'public_pages' => true,
 
     /*
     |--------------------------------------------------------------------------

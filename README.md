@@ -39,7 +39,9 @@ MelaCMS takes the other route:
 | Translatable content: JSON columns, one form with a tab per language | Available |
 | Settings page: site name, description and share image, contact details, social profiles | Available |
 | Media library: upload, image sizes, a form field to pick a file | Available |
-| Content model, SEO | Planned |
+| Pages: title, address and text per language, templates, cover image, publication date, served by the core | Available |
+| Building blocks for a site's own entities: translated slugs, publication date, rich text | Available |
+| SEO | Planned |
 
 ## Requirements
 
@@ -126,7 +128,8 @@ If the email belongs to an existing user, that user keeps their password and gai
 | `admin_path` | `admin` | URL path of the admin panel |
 | `pages` | `['settings' => ManageSettings::class, 'languages' => ManageLanguages::class]` | The admin pages the core adds. Works like `resources` |
 | `profile_page` | `EditProfile::class` | The page where a user edits their own account. `null` removes it; your own class replaces it |
-| `resources` | `['media' => MediaResource::class, 'users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
+| `resources` | `['pages' => PageResource::class, 'media' => MediaResource::class, 'users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
+| `public_pages` | `true` | The core answers every address no route of the site matches with the published page at that address. See [Pages](#pages) |
 | `media` | See [Media](#media) | Disk, directory, accepted types, maximum size and image sizes of the media library |
 
 ## Building a site
@@ -144,8 +147,10 @@ Everything specific to the site stays in the site's repository: models, migratio
 | Role | Access |
 | :--- | :--- |
 | `super-admin` | Passes every authorization check |
-| `admin` | Can enter the admin panel, use the media library and manage users, except super-admin accounts |
-| `editor` | Can enter the admin panel and use the media library. Cannot see the users, languages and settings screens |
+| `admin` | Everything an editor does, plus the languages, the settings and the users, except super-admin accounts |
+| `editor` | Writes, publishes and deletes pages and the site's own content, and uses the media library. Cannot see the users, languages and settings screens |
+
+The roles are checked in policies; there are no per-role permissions to configure. A site resource without a policy is open to every role. To restrict one, register a policy for its model with `Gate::policy()`.
 
 Roles are provided by [spatie/laravel-permission](https://github.com/spatie/laravel-permission), so the usual methods work on the user model:
 
@@ -319,7 +324,7 @@ The core adds a **Settings** page at `/admin/settings`, for super-admins and adm
 
 | Section | Fields | Read as |
 | :--- | :--- | :--- |
-| Site | Name and description, one per site language; share image | `site.name`, `site.description`, `site.share_image` |
+| Site | Name and description, one per site language; home page; share image | `site.name`, `site.description`, `site.home_page`, `site.share_image` |
 | Contact | Email, phone, address | `site.contact.email`, `site.contact.phone`, `site.contact.address` |
 | Social profiles | Facebook, Instagram, LinkedIn, X, YouTube, TikTok | `site.social.instagram`, ... |
 
@@ -374,6 +379,164 @@ class Settings extends ManageSettings
 Wrap a field in `Translations::make()` to have it per language. `socialNetworks()` can be overridden to change the list of profiles. Set `'settings' => null` to remove the page.
 
 All settings are stored in the `mela_settings` table and read with one query per request.
+
+### Pages
+
+The Pages screen (`/admin/pages`, every role) holds the pages of the site. A page has:
+
+| Field | Detail |
+| :--- | :--- |
+| Title, address, text | One per site language. The address is written from the title and can be changed; it may have levels (`services/web-design`) |
+| Published on | Empty: a draft. A date to come: public from that date |
+| Template | One of the site's views in `resources/views/pages`. Shown once the site has more than one |
+| Cover image | A file of the media library |
+
+#### How a page reaches the site
+
+The core answers every address that no route of the site matches. It looks for the published page at that address in the language of the request, and shows it with the view of its template:
+
+| Request | Page shown |
+| :--- | :--- |
+| `/about` | The page whose address is `about` in the default language |
+| `/it/chi-siamo` | The page whose Italian address is `chi-siamo` |
+| `/it/about` | The page whose address is `about` in the default language, when it has no Italian address |
+| `/` | The page chosen as home page on the Settings page |
+
+A route of the site always wins. A fresh Laravel app has a route for `/` in `routes/web.php`: remove it to let the home page setting work. A draft answers with a 404, except for someone logged in who may edit pages. `@hreflang` and `alternates()` give the address of the page in each language.
+
+Until the site has its own view, the core shows a page with a plain one. Create `resources/views/pages/default.blade.php` to give the pages the look of the site:
+
+```blade
+<x-layout :title="$page->title">
+    <h1>{{ $page->title }}</h1>
+
+    @if ($page->cover)
+        <img src="{{ $page->cover->url('large') }}" alt="{{ $page->cover->alt }}">
+    @endif
+
+    @richtext($page->body)
+</x-layout>
+```
+
+Every other file in that directory is a template an editor can choose: `resources/views/pages/landing-page.blade.php` is offered as "Landing Page". A page whose template was removed is shown with `default`.
+
+| In a view | Returns |
+| :--- | :--- |
+| `$page->title`, `$page->slug` | In the language of the request, with the default language as fallback |
+| `@richtext($page->body)` | The text as sanitized HTML |
+| `$page->cover` | The cover image, a [`Media`](#media) record, or `null` |
+| `$page->url()`, `$page->url('it')` | The full address of the page |
+| `$page->isHome()` | Whether it is the home page |
+| `Page::published()->get()` | The pages visitors may see, for example to build a menu |
+
+Print the text with `@richtext`, not with `{!! !!}`: it removes what could run in the browser and reads the address of each image again from the media disk.
+
+To serve the pages yourself, set `'public_pages' => false` in the config and find a page with `Page::published()->whereSlug($slug)->firstOrFail()`. A `Route::fallback()` of the site also replaces the core's.
+
+#### Fields for one template
+
+A template that needs more than a title and a text gets its fields from the site. Extend the resource and add them under `fields`:
+
+```php
+namespace App\Filament\Resources;
+
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Melasistema\MelaCms\Filament\Forms\Translations;
+use Melasistema\MelaCms\Filament\Resources\Pages\PageResource as CorePageResource;
+
+class PageResource extends CorePageResource
+{
+    public static function formComponents(): array
+    {
+        return [
+            ...parent::formComponents(),
+            Section::make('Hero')
+                ->visible(fn (Get $get): bool => $get('template') === 'home')
+                ->schema([
+                    TextInput::make('fields.hero.link'),
+                    Translations::make([TextInput::make('fields.hero.button')]),
+                ]),
+        ];
+    }
+}
+```
+
+```php
+// config/mela-cms.php
+'resources' => [
+    'pages' => \App\Filament\Resources\PageResource::class,
+],
+```
+
+```blade
+<a href="{{ $page->field('hero.link') }}">{{ $page->translated('hero.button') }}</a>
+```
+
+The values are saved in one JSON column, so no migration is needed.
+
+### Your own content
+
+An entity that is not a page (a post, a project, a product) belongs to the site: a migration, a model, a Filament resource in `app/Filament/Resources`, a route and a view. The core gives the parts that should work the same everywhere.
+
+```php
+// The migration
+Schema::create('posts', function (Blueprint $table) {
+    $table->id();
+    $table->json('title');
+    $table->json('slug');
+    $table->json('body')->nullable();
+    $table->foreignId('cover_id')->nullable()->constrained('mela_media')->nullOnDelete();
+    $table->timestamp('published_at')->nullable();
+    $table->timestamps();
+});
+```
+
+```php
+// The model
+use Melasistema\MelaCms\Concerns\HasSlug;
+use Melasistema\MelaCms\Concerns\Publishable;
+use Spatie\Translatable\HasTranslations;
+
+class Post extends Model
+{
+    use HasSlug, HasTranslations, Publishable;
+
+    public array $translatable = ['title', 'slug', 'body'];
+}
+```
+
+```php
+// The form of the resource
+Translations::make([
+    TextInput::make('title')->required()->live(onBlur: true)->afterStateUpdated(SlugInput::fill()),
+    SlugInput::make('slug')->required(),
+    RichText::make('body'),
+]),
+DateTimePicker::make('published_at'),
+MediaPicker::make('cover_id')->images(),
+```
+
+```php
+// The route, written once for every language
+Route::get('/blog/{slug}', function (string $slug) {
+    $post = Post::published()->whereSlug($slug)->firstOrFail();
+
+    app(Languages::class)->localize(array_map(fn ($slug) => "blog/{$slug}", $post->slugs()));
+
+    return view('posts.show', ['post' => $post]);
+});
+```
+
+| Part | What it does |
+| :--- | :--- |
+| `HasSlug` | `whereSlug($slug)` finds the record in the language of the request; a language without a slug uses the one of the default language. `slugs()` gives the slug in every language |
+| `Publishable` | `published()` keeps what visitors may see; `isPublished()` and `status()` (draft, scheduled, published), which a table column shows as a badge with `->state(fn ($record) => $record->status())->badge()` |
+| `SlugInput` | Accepts lowercase letters, numbers and hyphens, and refuses a slug another record of the model has in the same language. `SlugInput::fill()` on the title writes the slug while it is empty. `->path()` allows levels |
+| `RichText` | A rich text field whose images go into the media library. Printed with `@richtext($post->body)` |
+| `Languages::localize()` | Tells the language switcher and `@hreflang` where the current page is in each language |
+| `ContentPolicy` | Every core role may do everything. Not needed for that, since a resource without a policy is open to every role; write your own policy to restrict a model |
 
 ### Media
 

@@ -3,17 +3,19 @@
 namespace Melasistema\MelaCms\Filament\Pages;
 
 use BackedEnum;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Support\Icons\Heroicon;
 use Melasistema\MelaCms\Filament\Forms\MediaPicker;
 use Melasistema\MelaCms\Filament\Forms\Translations;
+use Melasistema\MelaCms\Models\Page;
 use Melasistema\MelaCms\Settings;
 
 /**
- * Where an admin fills in what every site has: its name, description and
- * share image, the contact details and the social profiles.
+ * Where an admin fills in what every site has: its name, description, home
+ * page and share image, the contact details and the social profiles.
  *
  * Everything in the form is saved under `site`, each field at its own name:
  * the field `contact.email` is read back as `site.contact.email`. A site adds
@@ -49,6 +51,12 @@ class ManageSettings extends SettingsPage
                             ->rows(3)
                             ->maxLength(300),
                     ]),
+                    Select::make('home_page')
+                        ->label('Home page')
+                        ->helperText('The page shown at the root of the site.')
+                        ->options(fn (): array => Page::query()->get()->mapWithKeys(fn (Page $page): array => [$page->getKey() => $page->title])->all())
+                        ->searchable()
+                        ->visible(fn (): bool => (bool) config('mela-cms.public_pages') && config('mela-cms.resources.pages') !== null),
                     MediaPicker::make('share_image')
                         ->label('Share image')
                         ->helperText('Shown when a page without an image of its own is shared on a social network.')

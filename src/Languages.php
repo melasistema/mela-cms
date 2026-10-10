@@ -21,6 +21,14 @@ class Languages
      */
     private ?string $current = null;
 
+    /**
+     * The path of the current page in each language, when it is not the same
+     * in all of them: [locale => path].
+     *
+     * @var array<string, string>
+     */
+    private array $paths = [];
+
     public function __construct(private Settings $settings) {}
 
     /**
@@ -122,6 +130,18 @@ class Languages
     }
 
     /**
+     * Tell where the current page lives in each language, when its address
+     * is translated: [locale => path]. alternates() and hreflang() follow it.
+     * A model with translated slugs gives the paths with slugs().
+     *
+     * @param  array<string, string|null>  $paths
+     */
+    public function localize(array $paths): void
+    {
+        $this->paths = array_filter($paths, is_string(...));
+    }
+
+    /**
      * The current page in every site language, for a language switcher:
      * [locale => url].
      *
@@ -129,7 +149,10 @@ class Languages
      */
     public function alternates(): array
     {
-        return array_combine($this->all(), array_map($this->url(...), $this->all()));
+        return array_combine($this->all(), array_map(
+            fn (string $locale) => $this->url($locale, $this->paths[$locale] ?? null),
+            $this->all(),
+        ));
     }
 
     /**
@@ -144,11 +167,13 @@ class Languages
 
         $tags = [];
 
-        foreach ($this->alternates() as $locale => $url) {
+        $alternates = $this->alternates();
+
+        foreach ($alternates as $locale => $url) {
             $tags[] = '<link rel="alternate" hreflang="'.e(str_replace('_', '-', $locale)).'" href="'.e($url).'">';
         }
 
-        $tags[] = '<link rel="alternate" hreflang="x-default" href="'.e($this->url($this->default())).'">';
+        $tags[] = '<link rel="alternate" hreflang="x-default" href="'.e($alternates[$this->default()]).'">';
 
         return new HtmlString(implode("\n", $tags));
     }
