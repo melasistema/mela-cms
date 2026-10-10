@@ -200,7 +200,22 @@ composer install
 
 The tests run inside a throwaway Laravel app provided by [Orchestra Testbench](https://packages.tools/testbench), on in-memory SQLite. No `.env` or database server is needed.
 
-How a change gets in:
+### Trying a change in a real app
+
+The package has no `artisan` and no pages of its own. To click through the admin while you work, require your clone into a throwaway Laravel app next to it, through a Composer path repository:
+
+```bash
+cd .. && laravel new mela-cms-sandbox && cd mela-cms-sandbox
+composer config repositories.mela-cms path ../mela-cms
+composer require melasistema/mela-cms:@dev
+php artisan mela:install
+npm install
+composer run dev
+```
+
+Composer symlinks `vendor/melasistema/mela-cms` to the clone, so an edit in the package is live in the app at `http://localhost:8000/admin`. The sandbox is disposable: delete it and create it again whenever you want a clean install. A path repository is for development only and never belongs in a real site.
+
+### How a change gets in
 
 1. Create a branch from `master`, named after the work: `feat/media-library`, `fix/login-redirect`.
 2. Open a pull request to `master`. Every push runs the formatting check, the tests and a check on the pull request title.
