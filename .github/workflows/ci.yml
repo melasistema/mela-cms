@@ -1,19 +1,16 @@
 # Continuous integration for the MelaCMS core package: lint -> test.
 #
-# Runs on every push to development and on every pull request. Pushes to master
-# are covered by release.yml, which calls this workflow before it releases.
+# Runs on every pull request to master, including ones from forks. Pushes to
+# master are covered by release.yml, which calls this workflow before it
+# releases.
 #
 # The package is tested inside a throwaway Laravel app provided by Orchestra
 # Testbench, so there is no .env, no database server and no asset build here.
 name: CI
 
 on:
-  push:
-    branches:
-      - development
   pull_request:
     branches:
-      - development
       - master
   workflow_call:
 

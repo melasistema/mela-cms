@@ -1,0 +1,28 @@
+# Checks that a pull request title is a conventional commit (feat: ..., fix: ...).
+#
+# Pull requests are squash-merged, so the title becomes the commit on master,
+# and that commit is what release-please reads to pick the next version and
+# write the changelog.
+name: PR title
+
+on:
+  # Runs with the base repository's token so it also works for pull requests
+  # from forks. Safe here: the job never checks out or runs the PR's code.
+  pull_request_target:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+
+permissions:
+  pull-requests: read
+
+jobs:
+  title:
+    name: Conventional title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

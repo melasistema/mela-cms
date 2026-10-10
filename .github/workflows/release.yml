@@ -1,10 +1,10 @@
 # Release for the MelaCMS core package: test -> release, on every push to master.
 #
 # How it works (https://github.com/googleapis/release-please):
-#   1. development is merged into master using conventional commits
-#      (feat: ..., fix: ..., feat!: ... for a breaking change).
-#   2. release-please opens or updates a "release PR" that bumps version.txt and
-#      writes CHANGELOG.md from those commits.
+#   1. Pull requests are squash-merged into master with a conventional commit
+#      title (feat: ..., fix: ..., feat!: ... for a breaking change).
+#   2. release-please opens or updates a "release PR" that writes CHANGELOG.md
+#      from those commits and proposes the next version.
 #   3. Merging the release PR creates the vX.Y.Z tag and the GitHub Release.
 #      Packagist picks the tag up through its GitHub hook, and client sites get
 #      the new version with `composer update melasistema/mela-cms`.
@@ -40,6 +40,6 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v5
         with:
-          # Without this, release-please works on the repository's default
-          # branch, which on GitHub is development.
+          # Release from the branch that was pushed, whatever the repository's
+          # default branch is.
           target-branch: ${{ github.ref_name }}

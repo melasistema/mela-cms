@@ -28,7 +28,7 @@ This site is built on [MelaCMS](https://github.com/melasistema/mela-cms). This s
 ### Git, releases and deploys
 
 - Work on `development`; `master` is what is live.
-- Use conventional commits (`feat:`, `fix:`, `feat!:` for breaking changes). They decide the next version and write `CHANGELOG.md`; never edit `CHANGELOG.md` or `version.txt` by hand.
+- Use conventional commits (`feat:`, `fix:`, `feat!:` for breaking changes). They decide the next version and write `CHANGELOG.md`; never edit `CHANGELOG.md` by hand.
 - A push to `development` runs CI (`.github/workflows/ci.yml`).
 - A push to `master` runs CI, then release-please opens or updates a release PR. Merging that PR tags the release and deploys it (`.github/workflows/release.yml`, `deploy.yml`).
 - Dependabot opens a PR on `development` when a new MelaCMS core version is released.
