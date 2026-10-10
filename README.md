@@ -27,7 +27,9 @@ MelaCMS takes the other route:
 | Area | State |
 | :--- | :--- |
 | Admin panel (Filament 5) at `/admin` | Available |
-| Roles `super-admin`, `admin`, `editor` | Available. `super-admin` can do everything; `admin` and `editor` can both enter the panel and are not yet told apart by permissions |
+| Roles `super-admin`, `admin`, `editor` | Available |
+| Users screen: create, edit and delete users, assign a role | Available |
+| Own-profile page | Planned |
 | `mela:install` and `mela:update` commands | Available |
 | CI, release and deploy workflows for client sites | Available, not yet proven on a live site |
 | Site locales | Stored in the config; nothing reads them yet |
@@ -113,6 +115,7 @@ If the email belongs to an existing user, that user keeps their password and gai
 | :--- | :--- | :--- |
 | `locales` | `['en']` | Languages the site is published in. The first is the default |
 | `admin_path` | `admin` | URL path of the admin panel |
+| `resources` | `['users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
 
 ## Building a site
 
@@ -129,8 +132,8 @@ Everything specific to the site stays in the site's repository: models, migratio
 | Role | Access |
 | :--- | :--- |
 | `super-admin` | Passes every authorization check |
-| `admin` | Can enter the admin panel |
-| `editor` | Can enter the admin panel |
+| `admin` | Can enter the admin panel and manage users, except super-admin accounts |
+| `editor` | Can enter the admin panel. Cannot see the users screen |
 
 Roles are provided by [spatie/laravel-permission](https://github.com/spatie/laravel-permission), so the usual methods work on the user model:
 
@@ -142,6 +145,48 @@ $user->hasRole(Role::Admin->value);
 ```
 
 A user with none of the three roles cannot enter the panel.
+
+### Users
+
+The core adds a **Users** screen at `/admin/users`. Each user has one role.
+
+- Only a super-admin can give the `super-admin` role, or edit and delete a super-admin account.
+- Nobody can delete their own account or change their own role.
+
+The rules are in `Melasistema\MelaCms\Policies\UserPolicy`. To change them, register your own policy for the user model in the site's `AppServiceProvider`:
+
+```php
+Gate::policy(User::class, \App\Policies\UserPolicy::class);
+```
+
+To add fields, extend the core resource and name your class in `config/mela-cms.php`:
+
+```php
+namespace App\Filament\Resources;
+
+use Filament\Forms\Components\TextInput;
+use Melasistema\MelaCms\Filament\Resources\Users\UserResource as CoreUserResource;
+
+class UserResource extends CoreUserResource
+{
+    public static function formComponents(): array
+    {
+        return [
+            ...parent::formComponents(),
+            TextInput::make('phone'),
+        ];
+    }
+}
+```
+
+```php
+// config/mela-cms.php
+'resources' => [
+    'users' => \App\Filament\Resources\UserResource::class,
+],
+```
+
+`tableColumns()` works the same way for the list. Set `'users' => null` to remove the screen.
 
 ## Updating the core
 

@@ -28,6 +28,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path(config('mela-cms.admin_path'))
             ->login()
+            // The core's own screens. A site removes or replaces one in config/mela-cms.php.
+            ->resources(array_values(array_filter(config('mela-cms.resources'))))
             // The site's own resources, pages and widgets live in the client app.
             ->discoverResources(in: app_path('Filament/Resources'), for: $namespace.'Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: $namespace.'Filament\\Pages')
