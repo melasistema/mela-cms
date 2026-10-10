@@ -42,6 +42,7 @@ MelaCMS takes the other route:
 | Pages: title, address and text per language, templates, cover image, publication date, served by the core | Available |
 | Building blocks for a site's own entities: translated slugs, publication date, rich text | Available |
 | SEO: title, description and share image per page, defaults from the settings, `@seo` tags, `/sitemap.xml` | Available |
+| Guide for coding agents: a complete entity, from the migration to the test | Available |
 
 ## Requirements
 
@@ -482,6 +483,8 @@ The values are saved in one JSON column, so no migration is needed.
 
 An entity that is not a page (a post, a project, a product) belongs to the site: a migration, a model, a Filament resource in `app/Filament/Resources`, a route and a view. The core gives the parts that should work the same everywhere.
 
+The full recipe is in [`docs/entity.md`](docs/entity.md): what to decide first, every file of a complete `Service` entity (migration, model, admin screen, controller, routes, views, sitemap entry, test) and the common variants. It is installed with the package, and the agent guidelines in the site's `AGENTS.md` and `CLAUDE.md` tell a coding agent to read it at `vendor/melasistema/mela-cms/docs/entity.md` before building an entity. Its code is run by the core's tests. What follows is the short version.
+
 ```php
 // The migration
 Schema::create('posts', function (Blueprint $table) {
@@ -555,7 +558,7 @@ Put `@seo` in the `<head>` of the layout, next to `@hreflang`. It prints the `<t
 | Tag | Value, first one that exists |
 | :--- | :--- |
 | Title | What the editor wrote for search engines, the title of the record, the name of the site. Written in the title format of the Settings page, `:title | :site` by default. The home page is called like the site |
-| Description | What the editor wrote for search engines, the description of the site |
+| Description | What the editor wrote for search engines, the `excerpt` of the record when it has one, the description of the site |
 | Image | The share image of the record, its cover, the share image of the site. The original file is used, not a WebP size |
 | `noindex` | The record asks for it, the record is not published, or the Settings page asks search engines not to list the site |
 | Canonical | The current address without its query string |
@@ -582,7 +585,7 @@ Route::get('/blog', function (Seo $seo) {
 });
 ```
 
-`Seo::for()` reads the title and `cover_id` of any model. To let an editor write the title, description and share image of a record, give the model a nullable `json` column `seo` and the `Melasistema\MelaCms\Concerns\HasSeo` trait, and add `SeoFields::make()` to the form of its resource.
+`Seo::for()` reads the title, the `excerpt` and the `cover_id` of any model. To let an editor write the title, description and share image of a record, give the model a nullable `json` column `seo` and the `Melasistema\MelaCms\Concerns\HasSeo` trait, and add `SeoFields::make()` to the form of its resource.
 
 #### Sitemap
 

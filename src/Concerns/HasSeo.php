@@ -11,8 +11,8 @@ use Melasistema\MelaCms\Languages;
  * an image for social networks, and whether the record is kept out of search
  * engines.
  *
- * Seo::for($model) reads these, with the title and the cover of the record
- * as fallbacks.
+ * Seo::for($model) reads these, with the title, the excerpt and the cover of
+ * the record as fallbacks.
  */
 trait HasSeo
 {
@@ -32,9 +32,14 @@ trait HasSeo
             ?? $this->getAttribute('name');
     }
 
+    /**
+     * The description for search engines: the one written for them, or the
+     * excerpt of the record when it has one.
+     */
     public function seoDescription(): ?string
     {
-        return app(Languages::class)->translation(Arr::get($this->seo ?? [], 'description'));
+        return app(Languages::class)->translation(Arr::get($this->seo ?? [], 'description'))
+            ?? $this->getAttribute('excerpt');
     }
 
     /**

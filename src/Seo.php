@@ -36,7 +36,7 @@ class Seo
     /**
      * Take title, description, image and indexing from a record. A model
      * with the HasSeo trait gives what an editor wrote for search engines;
-     * any other gives its title and its cover.
+     * any other gives its title, its excerpt and its cover.
      */
     public function for(Model $model): static
     {
@@ -47,6 +47,7 @@ class Seo
             $this->noindex = $model->seoNoindex();
         } else {
             $this->title = $model->getAttribute('title') ?? $model->getAttribute('name');
+            $this->description = $model->getAttribute('excerpt');
             $this->image = $model->getAttribute('cover_id');
         }
 
