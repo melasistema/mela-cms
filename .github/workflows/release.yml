@@ -39,3 +39,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: googleapis/release-please-action@v5
+        with:
+          # Without this, release-please works on the repository's default
+          # branch, which on GitHub is development.
+          target-branch: ${{ github.ref_name }}

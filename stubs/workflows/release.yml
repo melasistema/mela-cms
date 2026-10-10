@@ -50,6 +50,9 @@ jobs:
         id: release
         with:
           release-type: simple
+          # Without this, release-please works on the repository's default
+          # branch, which may not be the one that was just pushed.
+          target-branch: ${{ github.ref_name }}
 
   deploy:
     name: Deploy
