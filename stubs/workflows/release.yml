@@ -1,0 +1,59 @@
+# Release for a MelaCMS site: test -> release -> deploy, on every push to master.
+#
+# How it works (https://github.com/googleapis/release-please):
+#   1. You merge development into master using conventional commits
+#      (feat: ..., fix: ..., feat!: ... for a breaking change).
+#   2. release-please opens or updates a "release PR" that bumps version.txt and
+#      writes CHANGELOG.md from those commits.
+#   3. Merging the release PR creates the tag and the GitHub Release, and the
+#      deploy job below ships that tag.
+#
+# One-time setup:
+#   Settings -> Actions -> General -> Workflow permissions ->
+#     enable "Allow GitHub Actions to create and approve pull requests".
+#
+# The deploy is a job in this workflow on purpose: a tag created by the default
+# GITHUB_TOKEN does not trigger other workflows, so a separate workflow listening
+# for "release published" would never run.
+#
+# If this site is not deployed through GitHub Actions, delete the `deploy` job
+# and deploy.yml; the release PR, tag and changelog keep working on their own.
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  release-please:
+    name: Release
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: simple
+
+  deploy:
+    name: Deploy
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ref: ${{ needs.release-please.outputs.tag_name }}
+    secrets: inherit

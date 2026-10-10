@@ -1,0 +1,24 @@
+/vendor
+/node_modules
+/composer.lock
+/.phpunit.cache
+.phpunit.result.cache
+.phpactor.json
+npm-debug.log
+yarn-error.log
+/auth.json
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+/.antigravitycli
+/references
+
+# ── macOS noise ───────────────────────────────────────────────
+.DS_Store
+
+# Agents (root only — the agent guides shipped in stubs/ must be tracked)
+/GEMINI.md
+/CLAUDE.md
+/AGENTS.md

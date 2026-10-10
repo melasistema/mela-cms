@@ -1,0 +1,80 @@
+# Continuous integration for a MelaCMS site: lint -> test.
+#
+# Runs on every push to development and on every pull request. Pushes to master
+# are covered by release.yml, which calls this workflow before it releases, so
+# nothing is released or deployed without passing these jobs on that exact commit.
+#
+# Nothing here is specific to a server or a client: it only needs the repo.
+name: CI
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+      - master
+  workflow_call:
+
+# Least privilege: nothing here writes back to the repo.
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # Check-only: fails the build on violations, never modifies files.
+      - name: Check PHP formatting (Pint)
+        run: vendor/bin/pint --test
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: mbstring, xml, ctype, intl, pdo_sqlite, bcmath
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      # The Blade views reference the Vite manifest, so the assets must exist
+      # before the feature tests render a page.
+      - name: Build assets
+        run: npm run build
+
+      - name: Tests
+        run: php artisan test

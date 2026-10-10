@@ -1,0 +1,17 @@
+# Opens a pull request on development whenever a new MelaCMS core version is
+# released, so updating the CMS is: review the PR, let CI run, merge.
+#
+# The commit prefix is `fix` on purpose: release-please only cuts a release for
+# feat/fix commits, and a core update should reach production like any other fix.
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: daily
+    target-branch: development
+    allow:
+      - dependency-name: melasistema/mela-cms
+    commit-message:
+      prefix: fix
+      include: scope

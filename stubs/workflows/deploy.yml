@@ -1,0 +1,150 @@
+# Deployment for a MelaCMS site over SSH. NOT required to run the site.
+#
+# Called by release.yml when a release is created, and runnable by hand
+# (Actions -> Deploy -> Run workflow) to redeploy any tag or branch.
+#
+# The site is built here (Composer + Vite) and the result is copied to the
+# server, so the host only needs PHP and SSH: no Composer, no Node.
+#
+# Nothing about the target server is hardcoded. Configure it under
+#   Settings -> Secrets and variables -> Actions
+#     Variables:
+#       DEPLOY_PATH        Absolute path to the app dir on the server,
+#                          e.g. /var/www/example.com
+#       PHP_BIN            Optional. PHP CLI binary on the server when the
+#                          default `php` is the wrong version, e.g. php8.4
+#     Secrets:
+#       SSH_HOST           Server hostname or IP
+#       SSH_USER           SSH username
+#       SSH_KEY            SSH private key (PEM)
+#       MAINTENANCE_TOKEN  Token to bypass the maintenance page during deploy
+#
+# Bind this to a protected GitHub Environment named "production" (Settings ->
+# Environments) to require reviewers before a deploy runs.
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Tag, branch or commit to deploy
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag, branch or commit to deploy
+        required: true
+        default: master
+        type: string
+
+permissions:
+  contents: read
+
+# Serialize deploys and never cancel one mid-flight.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+      PHP_BIN: ${{ vars.PHP_BIN || 'php' }}
+      MAINTENANCE_TOKEN: ${{ secrets.MAINTENANCE_TOKEN }}
+    steps:
+      - name: Fail fast if config is missing
+        run: |
+          test -n "${DEPLOY_PATH}" || {
+            echo "ERROR: the DEPLOY_PATH repository variable is not set." >&2
+            echo "Set it under Settings -> Secrets and variables -> Actions -> Variables." >&2
+            exit 1
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: mbstring, xml, ctype, intl, pdo_mysql, bcmath
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install Composer dependencies
+        # Production-only dependencies.
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Build assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: Trim files not needed on the server
+        run: rm -rf .git .github node_modules tests
+
+      - name: Deploy with SCP
+        # Copies the built codebase (source + vendor + public/build) to the server.
+        # Pinned to a commit SHA because this action receives the SSH key — a
+        # mutable ref would let an upstream compromise exfiltrate it.
+        uses: appleboy/scp-action@ff85246acaad7bdce478db94a363cd2bf7c90345 # v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "./*"
+          target: ${{ vars.DEPLOY_PATH }}
+
+      - name: Run post-deployment commands on server
+        # SHA-pinned for the same reason as scp-action above.
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          # Forwarded into the remote shell as env vars instead of interpolating
+          # their values into the script text.
+          envs: DEPLOY_PATH,PHP_BIN,MAINTENANCE_TOKEN
+          script: |
+            # Abort on the first error instead of reporting a green deploy while
+            # migrations silently failed.
+            set -euo pipefail
+
+            cd "$DEPLOY_PATH"
+
+            PHP="$(command -v "$PHP_BIN" || true)"
+            if [ -z "$PHP" ]; then
+              echo "ERROR: PHP binary '$PHP_BIN' not found on the server." >&2
+              echo "Set the PHP_BIN repository variable to the PHP 8.4 CLI binary." >&2
+              exit 1
+            fi
+            "$PHP" -v
+
+            # With set -e, a failed migration leaves the site in maintenance (safe)
+            # rather than bringing a broken build back up.
+            "$PHP" artisan down --secret="$MAINTENANCE_TOKEN"
+
+            # Runs the site's own migrations and the MelaCMS core migrations.
+            "$PHP" artisan migrate --force
+
+            "$PHP" artisan storage:link
+
+            "$PHP" artisan config:cache
+            "$PHP" artisan route:cache
+            "$PHP" artisan view:cache
+            "$PHP" artisan event:cache
+
+            "$PHP" artisan up
+
+            echo "Deployment completed successfully!"
