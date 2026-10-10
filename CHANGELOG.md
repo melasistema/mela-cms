@@ -11,5 +11,3 @@
 ### Bug Fixes
 
 * target the pushed branch in release-please workflows ([c08a97d](https://github.com/melasistema/mela-cms/commit/c08a97ddefeafb04282b1ad59d972bbd3db4e127))
-
-## Changelog
