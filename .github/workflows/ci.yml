@@ -1,0 +1,63 @@
+# Continuous integration for the MelaCMS core package: lint -> test.
+#
+# Runs on every push to development and on every pull request. Pushes to master
+# are covered by release.yml, which calls this workflow before it releases.
+#
+# The package is tested inside a throwaway Laravel app provided by Orchestra
+# Testbench, so there is no .env, no database server and no asset build here.
+name: CI
+
+on:
+  push:
+    branches:
+      - development
+  pull_request:
+    branches:
+      - development
+      - master
+  workflow_call:
+
+# Least privilege: nothing here writes back to the repo.
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+
+      # composer.lock is not committed (this is a library), so dependencies are
+      # resolved fresh on every run, like they are in a client site.
+      - name: Install Composer dependencies
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      # Check-only: fails the build on violations, never modifies files.
+      - name: Check PHP formatting (Pint)
+        run: composer lint
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          extensions: mbstring, xml, ctype, intl, pdo_sqlite, bcmath
+
+      - name: Install Composer dependencies
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Tests
+        run: composer test
