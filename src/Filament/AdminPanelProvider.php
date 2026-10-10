@@ -28,6 +28,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path(config('mela-cms.admin_path'))
             ->login()
+            // Every user edits their own name, email and password here, whatever their role.
+            ->profile(config('mela-cms.profile_page'), isSimple: false)
             // The core's own screens. A site removes or replaces one in config/mela-cms.php.
             ->resources(array_values(array_filter(config('mela-cms.resources'))))
             // The site's own resources, pages and widgets live in the client app.

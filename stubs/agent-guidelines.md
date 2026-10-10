@@ -14,6 +14,7 @@ This site is built on [MelaCMS](https://github.com/melasistema/mela-cms). This s
 - Public site: Blade views, Tailwind via Vite, Alpine for interactions. No Inertia. Vue is not installed; add it only when a page needs a component island.
 - Site locales are listed in `config/mela-cms.php`.
 - The user model uses `Melasistema\MelaCms\Concerns\HasCmsAccess`; check roles with `$user->hasRole(...)`.
+- The core provides the profile page (`/admin/profile`), where each user edits their own name, email and password. To add fields, extend `Melasistema\MelaCms\Filament\Pages\EditProfile`, override `form()`, and set the class as `profile_page` in `config/mela-cms.php`.
 - The core provides the Users screen (`/admin/users`); do not build another one. To add user fields, extend `Melasistema\MelaCms\Filament\Resources\Users\UserResource`, override `formComponents()` or `tableColumns()`, and set the class as `resources.users` in `config/mela-cms.php`. To change who may manage users, register a policy for the user model with `Gate::policy()` in `AppServiceProvider`.
 
 ### Commands

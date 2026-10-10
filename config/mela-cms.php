@@ -1,5 +1,6 @@
 <?php
 
+use Melasistema\MelaCms\Filament\Pages\EditProfile;
 use Melasistema\MelaCms\Filament\Resources\Users\UserResource;
 
 return [
@@ -37,5 +38,18 @@ return [
     'resources' => [
         'users' => UserResource::class,
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Profile Page
+    |--------------------------------------------------------------------------
+    |
+    | The page where a logged-in user changes their own name, email and
+    | password. Set it to null to remove the page, or to your own class that
+    | extends this one to change it.
+    |
+    */
+
+    'profile_page' => EditProfile::class,
 
 ];

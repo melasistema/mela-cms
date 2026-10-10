@@ -29,7 +29,7 @@ MelaCMS takes the other route:
 | Admin panel (Filament 5) at `/admin` | Available |
 | Roles `super-admin`, `admin`, `editor` | Available |
 | Users screen: create, edit and delete users, assign a role | Available |
-| Own-profile page | Planned |
+| Profile page: every user changes their own name, email and password | Available |
 | `mela:install` and `mela:update` commands | Available |
 | CI, release and deploy workflows for client sites | Available, not yet proven on a live site |
 | Site locales | Stored in the config; nothing reads them yet |
@@ -115,6 +115,7 @@ If the email belongs to an existing user, that user keeps their password and gai
 | :--- | :--- | :--- |
 | `locales` | `['en']` | Languages the site is published in. The first is the default |
 | `admin_path` | `admin` | URL path of the admin panel |
+| `profile_page` | `EditProfile::class` | The page where a user edits their own account. `null` removes it; your own class replaces it |
 | `resources` | `['users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
 
 ## Building a site
@@ -187,6 +188,12 @@ class UserResource extends CoreUserResource
 ```
 
 `tableColumns()` works the same way for the list. Set `'users' => null` to remove the screen.
+
+### Profile
+
+Every user, whatever their role, has a profile page at `/admin/profile`, reached from the user menu. They can change their name, email and password there; changing the email or the password asks for the current password.
+
+To add fields, extend `Melasistema\MelaCms\Filament\Pages\EditProfile`, override `form()`, and set your class as `profile_page` in `config/mela-cms.php`. Set it to `null` to remove the page.
 
 ## Updating the core
 
