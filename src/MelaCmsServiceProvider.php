@@ -13,6 +13,7 @@ use Melasistema\MelaCms\Console\UpdateCommand;
 use Melasistema\MelaCms\Enums\Role;
 use Melasistema\MelaCms\Filament\AdminPanelProvider;
 use Melasistema\MelaCms\Http\Controllers\PageController;
+use Melasistema\MelaCms\Http\Controllers\SitemapController;
 use Melasistema\MelaCms\Http\Middleware\SetLocale;
 use Melasistema\MelaCms\Install\Project;
 use Melasistema\MelaCms\Models\Media;
@@ -34,6 +35,7 @@ class MelaCmsServiceProvider extends ServiceProvider
         $this->app->singleton(Project::class, fn () => new Project($this->app->basePath()));
         $this->app->scoped(Settings::class);
         $this->app->scoped(Languages::class);
+        $this->app->scoped(Seo::class);
 
         // A translation that is missing falls back to the default language of
         // the site, not to the app's fallback locale.
@@ -56,11 +58,15 @@ class MelaCmsServiceProvider extends ServiceProvider
         $this->app->make(Kernel::class)->pushMiddleware(SetLocale::class);
 
         Blade::directive('hreflang', fn () => '<?php echo app(\\'.Languages::class.'::class)->hreflang(); ?>');
+        Blade::directive('seo', fn () => '<?php echo app(\\'.Seo::class.'::class)->render()."\n"; ?>');
         Blade::directive('richtext', fn (string $expression) => '<?php echo \\'.RichContent::class."::html({$expression}); ?>");
 
         // The pages of the site, at every address that no other route takes.
         // A fallback route of the site replaces this one.
         Route::fallback(PageController::class)->middleware('web');
+
+        // A route of the site at the same address replaces this one.
+        Route::get('sitemap.xml', SitemapController::class)->name('mela-cms.sitemap');
 
         // A super-admin passes every authorization check.
         Gate::before(fn ($user) => method_exists($user, 'hasRole') && $user->hasRole(Role::SuperAdmin->value) ? true : null);

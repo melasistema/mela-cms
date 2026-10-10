@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Melasistema\MelaCms\Enums\PublicationStatus;
 use Melasistema\MelaCms\Filament\Forms\MediaPicker;
 use Melasistema\MelaCms\Filament\Forms\RichText;
+use Melasistema\MelaCms\Filament\Forms\SeoFields;
 use Melasistema\MelaCms\Filament\Forms\SlugInput;
 use Melasistema\MelaCms\Filament\Forms\Translations;
 use Melasistema\MelaCms\Filament\Resources\Pages\Pages\CreatePage;
@@ -102,6 +103,7 @@ class PageResource extends Resource
                         RichText::make('body')
                             ->label('Text'),
                     ]),
+                    SeoFields::make(),
                 ]),
             Section::make()
                 ->columnSpan(['lg' => 1])

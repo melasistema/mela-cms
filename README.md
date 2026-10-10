@@ -41,7 +41,7 @@ MelaCMS takes the other route:
 | Media library: upload, image sizes, a form field to pick a file | Available |
 | Pages: title, address and text per language, templates, cover image, publication date, served by the core | Available |
 | Building blocks for a site's own entities: translated slugs, publication date, rich text | Available |
-| SEO | Planned |
+| SEO: title, description and share image per page, defaults from the settings, `@seo` tags, `/sitemap.xml` | Available |
 
 ## Requirements
 
@@ -130,6 +130,7 @@ If the email belongs to an existing user, that user keeps their password and gai
 | `profile_page` | `EditProfile::class` | The page where a user edits their own account. `null` removes it; your own class replaces it |
 | `resources` | `['pages' => PageResource::class, 'media' => MediaResource::class, 'users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
 | `public_pages` | `true` | The core answers every address no route of the site matches with the published page at that address. See [Pages](#pages) |
+| `sitemap` | `[Page::class]` | What `/sitemap.xml` lists. See [SEO](#seo) |
 | `media` | See [Media](#media) | Disk, directory, accepted types, maximum size and image sizes of the media library |
 
 ## Building a site
@@ -325,6 +326,7 @@ The core adds a **Settings** page at `/admin/settings`, for super-admins and adm
 | Section | Fields | Read as |
 | :--- | :--- | :--- |
 | Site | Name and description, one per site language; home page; share image | `site.name`, `site.description`, `site.home_page`, `site.share_image` |
+| Search engines | Title format; a switch that asks search engines not to list the site | `site.seo.title_format`, `site.seo.noindex` |
 | Contact | Email, phone, address | `site.contact.email`, `site.contact.phone`, `site.contact.address` |
 | Social profiles | Facebook, Instagram, LinkedIn, X, YouTube, TikTok | `site.social.instagram`, ... |
 
@@ -537,6 +539,74 @@ Route::get('/blog/{slug}', function (string $slug) {
 | `RichText` | A rich text field whose images go into the media library. Printed with `@richtext($post->body)` |
 | `Languages::localize()` | Tells the language switcher and `@hreflang` where the current page is in each language |
 | `ContentPolicy` | Every core role may do everything. Not needed for that, since a resource without a policy is open to every role; write your own policy to restrict a model |
+
+### SEO
+
+Put `@seo` in the `<head>` of the layout, next to `@hreflang`. It prints the `<title>`, the description, the canonical address, the `robots` tag when the page is not to be listed, and the Open Graph and Twitter tags used when the address is shared.
+
+```blade
+<head>
+    <meta charset="utf-8">
+    @seo
+    @hreflang
+</head>
+```
+
+| Tag | Value, first one that exists |
+| :--- | :--- |
+| Title | What the editor wrote for search engines, the title of the record, the name of the site. Written in the title format of the Settings page, `:title | :site` by default. The home page is called like the site |
+| Description | What the editor wrote for search engines, the description of the site |
+| Image | The share image of the record, its cover, the share image of the site. The original file is used, not a WebP size |
+| `noindex` | The record asks for it, the record is not published, or the Settings page asks search engines not to list the site |
+| Canonical | The current address without its query string |
+
+For a page of the core there is nothing to do: each page has a "Search engines" section in its form, and the core fills the tags before showing the view.
+
+For a route of the site, fill the tags from a record or value by value:
+
+```php
+use Melasistema\MelaCms\Seo;
+
+Route::get('/blog/{slug}', function (string $slug, Seo $seo) {
+    $post = Post::published()->whereSlug($slug)->firstOrFail();
+
+    $seo->for($post)->type('article');
+
+    return view('posts.show', ['post' => $post]);
+});
+
+Route::get('/blog', function (Seo $seo) {
+    $seo->title('Blog')->description('Everything we wrote.');
+
+    return view('posts.index');
+});
+```
+
+`Seo::for()` reads the title and `cover_id` of any model. To let an editor write the title, description and share image of a record, give the model a nullable `json` column `seo` and the `Melasistema\MelaCms\Concerns\HasSeo` trait, and add `SeoFields::make()` to the form of its resource.
+
+#### Sitemap
+
+`/sitemap.xml` lists every published page in every site language, with its last change and the other languages as alternates. A page kept out of search engines is left out. Add the site's own content under `sitemap` in the config:
+
+```php
+'sitemap' => [
+    \Melasistema\MelaCms\Models\Page::class,
+    \App\Models\Post::class,   // a model with a url(?string $locale) method
+    'blog',                     // a page served by a route of the site
+],
+```
+
+```php
+// On the Post model
+public function url(?string $locale = null): string
+{
+    $locale ??= app(Languages::class)->current();
+
+    return app(Languages::class)->url($locale, 'blog/'.$this->getTranslation('slug', $locale));
+}
+```
+
+An empty array removes the sitemap. It also answers 404 while the Settings page asks search engines not to list the site. A fresh Laravel app has a static `public/robots.txt`: add a `Sitemap: https://example.com/sitemap.xml` line to it.
 
 ### Media
 

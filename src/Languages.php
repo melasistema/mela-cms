@@ -179,6 +179,20 @@ class Languages
     }
 
     /**
+     * The value of the language of the request among [locale => value]. An
+     * empty one falls back to the default language of the site.
+     */
+    public function translation(mixed $translations, mixed $default = null): mixed
+    {
+        $translations = is_array($translations) ? $translations : [];
+
+        return array_find(
+            [$translations[app()->getLocale()] ?? null, $translations[$this->default()] ?? null],
+            fn (mixed $value) => filled($value),
+        ) ?? $default;
+    }
+
+    /**
      * The language of the admin panel. It does not have to be a site language.
      */
     public function admin(): string

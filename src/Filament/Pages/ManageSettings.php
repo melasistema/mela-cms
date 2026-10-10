@@ -6,11 +6,13 @@ use BackedEnum;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Support\Icons\Heroicon;
 use Melasistema\MelaCms\Filament\Forms\MediaPicker;
 use Melasistema\MelaCms\Filament\Forms\Translations;
 use Melasistema\MelaCms\Models\Page;
+use Melasistema\MelaCms\Seo;
 use Melasistema\MelaCms\Settings;
 
 /**
@@ -61,6 +63,17 @@ class ManageSettings extends SettingsPage
                         ->label('Share image')
                         ->helperText('Shown when a page without an image of its own is shared on a social network.')
                         ->images(),
+                ]),
+            Section::make('Search engines')
+                ->schema([
+                    TextInput::make('seo.title_format')
+                        ->label('Title format')
+                        ->helperText('How the title of a page is written in search results and in the browser tab. :title is the title of the page, :site the name of the site.')
+                        ->placeholder(Seo::DEFAULT_TITLE_FORMAT)
+                        ->maxLength(100),
+                    Toggle::make('seo.noindex')
+                        ->label('Ask search engines not to list the site')
+                        ->helperText('For a site that is not ready yet. Every page asks not to be listed and the sitemap is switched off.'),
                 ]),
             Section::make('Contact')
                 ->columns(2)

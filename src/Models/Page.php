@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Melasistema\MelaCms\Concerns\HasSeo;
 use Melasistema\MelaCms\Concerns\HasSlug;
 use Melasistema\MelaCms\Concerns\Publishable;
 use Melasistema\MelaCms\Languages;
@@ -23,11 +24,15 @@ use Spatie\Translatable\HasTranslations;
  * @property string $template
  * @property int|null $cover_id
  * @property array<string, mixed>|null $fields
+ * @property array<string, mixed>|null $seo
  * @property Carbon|null $published_at
  * @property-read Media|null $cover
  */
 class Page extends Model
 {
+    use HasSeo {
+        seoTitle as protected seoTitleOrTitle;
+    }
     use HasSlug;
     use HasTranslations;
     use Publishable;
@@ -73,6 +78,17 @@ class Page extends Model
     public function isHome(): bool
     {
         return $this->exists && (string) app(Settings::class)->get('site.home_page') === (string) $this->getKey();
+    }
+
+    /**
+     * The home page without a title written for search engines is called
+     * like the site, not "Home".
+     */
+    public function seoTitle(): ?string
+    {
+        return $this->isHome()
+            ? app(Languages::class)->translation(Arr::get($this->seo ?? [], 'title'))
+            : $this->seoTitleOrTitle();
     }
 
     /**
@@ -126,12 +142,7 @@ class Page extends Model
      */
     public function translated(string $key, mixed $default = null): mixed
     {
-        $translations = Arr::wrap($this->field($key));
-
-        return array_find(
-            [$translations[app()->getLocale()] ?? null, $translations[app(Languages::class)->default()] ?? null],
-            fn (mixed $value) => filled($value),
-        ) ?? $default;
+        return app(Languages::class)->translation($this->field($key), $default);
     }
 
     /**

@@ -31,12 +31,7 @@ class Settings
      */
     public function translated(string $key, mixed $default = null): mixed
     {
-        $translations = Arr::wrap($this->get($key));
-
-        return array_find(
-            [$translations[app()->getLocale()] ?? null, $translations[app(Languages::class)->default()] ?? null],
-            fn (mixed $value) => filled($value),
-        ) ?? $default;
+        return app(Languages::class)->translation($this->get($key), $default);
     }
 
     public function set(string $key, mixed $value): void

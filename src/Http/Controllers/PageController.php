@@ -5,6 +5,7 @@ namespace Melasistema\MelaCms\Http\Controllers;
 use Illuminate\Http\Request;
 use Melasistema\MelaCms\Languages;
 use Melasistema\MelaCms\Models\Page;
+use Melasistema\MelaCms\Seo;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -16,7 +17,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class PageController
 {
-    public function __invoke(Request $request, Languages $languages): Response
+    public function __invoke(Request $request, Languages $languages, Seo $seo): Response
     {
         abort_unless((bool) config('mela-cms.public_pages'), 404);
 
@@ -36,6 +37,9 @@ class PageController
 
         // The language switcher and the hreflang tags follow the slug of each language.
         $languages->localize($page->paths());
+
+        // What @seo prints in the <head> of the view.
+        $seo->for($page);
 
         return response()->view($page->view(), ['page' => $page]);
     }

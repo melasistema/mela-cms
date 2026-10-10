@@ -6,6 +6,7 @@ use Melasistema\MelaCms\Filament\Pages\ManageSettings;
 use Melasistema\MelaCms\Filament\Resources\Media\MediaResource;
 use Melasistema\MelaCms\Filament\Resources\Pages\PageResource;
 use Melasistema\MelaCms\Filament\Resources\Users\UserResource;
+use Melasistema\MelaCms\Models\Page;
 
 return [
 
@@ -118,6 +119,23 @@ return [
     */
 
     'public_pages' => true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sitemap
+    |--------------------------------------------------------------------------
+    |
+    | What /sitemap.xml lists, in every site language. An entry is a model
+    | class with a `url(?string $locale)` method, or the path of a page the
+    | site serves with its own route ('blog'). Of a model with a publication
+    | date only what is published is listed. An empty array removes the
+    | sitemap.
+    |
+    */
+
+    'sitemap' => [
+        Page::class,
+    ],
 
     /*
     |--------------------------------------------------------------------------
