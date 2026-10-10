@@ -3,10 +3,23 @@
 #
 # The commit prefix is `fix` on purpose: release-please only cuts a release for
 # feat/fix commits, and a core update should reach production like any other fix.
+#
+# While melasistema/mela-cms is a private repository, Dependabot needs a token
+# to read it. Add a Dependabot secret named COMPOSER_TOKEN (Settings -> Secrets
+# and variables -> Dependabot), uncomment the `registries` blocks below, and add
+# COMPOSER_AUTH as a Dependabot secret too so CI can run on its pull requests.
 version: 2
+# registries:
+#   mela-cms:
+#     type: git
+#     url: https://github.com
+#     username: x-access-token
+#     password: ${{ secrets.COMPOSER_TOKEN }}
 updates:
   - package-ecosystem: composer
     directory: /
+    # registries:
+    #   - mela-cms
     schedule:
       interval: daily
     target-branch: development

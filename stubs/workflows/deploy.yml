@@ -84,6 +84,10 @@ jobs:
 
       - name: Install Composer dependencies
         # Production-only dependencies.
+        # Only needed while melasistema/mela-cms is a private repository: a
+        # token that can read it. Empty and ignored once the package is public.
+        env:
+          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
         run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Build assets
