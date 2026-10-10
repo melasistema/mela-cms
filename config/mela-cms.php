@@ -2,6 +2,7 @@
 
 use Melasistema\MelaCms\Filament\Pages\EditProfile;
 use Melasistema\MelaCms\Filament\Pages\ManageLanguages;
+use Melasistema\MelaCms\Filament\Pages\ManageSettings;
 use Melasistema\MelaCms\Filament\Resources\Users\UserResource;
 
 return [
@@ -83,6 +84,7 @@ return [
     */
 
     'pages' => [
+        'settings' => ManageSettings::class,
         'languages' => ManageLanguages::class,
     ],
 

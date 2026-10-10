@@ -3,20 +3,10 @@
 namespace Melasistema\MelaCms\Filament\Pages;
 
 use BackedEnum;
-use Filament\Actions\Action;
-use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
-use Filament\Notifications\Notification;
-use Filament\Pages\Page;
-use Filament\Schemas\Components\Actions;
-use Filament\Schemas\Components\Component;
-use Filament\Schemas\Components\EmbeddedSchema;
-use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Arr;
-use Melasistema\MelaCms\Enums\Role;
 use Melasistema\MelaCms\Languages;
 
 /**
@@ -25,26 +15,14 @@ use Melasistema\MelaCms\Languages;
  *
  * A site that needs something else extends this class and names its class
  * under `pages` in config/mela-cms.php.
- *
- * @property-read Schema $form
  */
-class ManageLanguages extends Page
+class ManageLanguages extends SettingsPage
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLanguage;
 
     protected static ?string $slug = 'languages';
 
     protected static ?string $title = 'Languages';
-
-    /**
-     * @var array<string, mixed>|null
-     */
-    public ?array $data = [];
-
-    public static function canAccess(): bool
-    {
-        return (bool) Filament::auth()->user()?->hasAnyRole([Role::SuperAdmin->value, Role::Admin->value]);
-    }
 
     public function mount(): void
     {
@@ -57,16 +35,6 @@ class ManageLanguages extends Page
         ]);
     }
 
-    public function form(Schema $schema): Schema
-    {
-        return $schema
-            ->components(static::formComponents())
-            ->statePath('data');
-    }
-
-    /**
-     * @return array<Component>
-     */
     public static function formComponents(): array
     {
         return [
@@ -93,33 +61,13 @@ class ManageLanguages extends Page
         ];
     }
 
-    public function content(Schema $schema): Schema
-    {
-        return $schema->components([
-            Form::make([EmbeddedSchema::make('form')])
-                ->id('form')
-                ->livewireSubmitHandler('save')
-                ->footer([
-                    Actions::make([
-                        Action::make('save')
-                            ->label(__('filament-panels::resources/pages/edit-record.form.actions.save.label'))
-                            ->submit('save')
-                            ->keyBindings(['mod+s']),
-                    ]),
-                ]),
-        ]);
-    }
-
     public function save(): void
     {
         $data = $this->form->getState();
 
         app(Languages::class)->update($data['locales'], $data['default'], $data['admin']);
 
-        Notification::make()
-            ->success()
-            ->title(__('filament-panels::resources/pages/edit-record.notifications.saved.title'))
-            ->send();
+        $this->notifySaved();
 
         // Reloaded so the panel shows in the admin language just chosen.
         $this->redirect(static::getUrl());

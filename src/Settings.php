@@ -3,6 +3,7 @@
 namespace Melasistema\MelaCms;
 
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -16,9 +17,26 @@ class Settings
      */
     private ?array $values = null;
 
+    /**
+     * A dot reaches inside a value: `site.contact.email`.
+     */
     public function get(string $key, mixed $default = null): mixed
     {
-        return $this->all()[$key] ?? $default;
+        return Arr::get($this->all(), $key) ?? $default;
+    }
+
+    /**
+     * A value that is saved per language, in the language of the request. An
+     * empty translation falls back to the default language of the site.
+     */
+    public function translated(string $key, mixed $default = null): mixed
+    {
+        $translations = Arr::wrap($this->get($key));
+
+        return array_find(
+            [$translations[app()->getLocale()] ?? null, $translations[app(Languages::class)->default()] ?? null],
+            fn (mixed $value) => filled($value),
+        ) ?? $default;
     }
 
     public function set(string $key, mixed $value): void
@@ -29,6 +47,39 @@ class Settings
         );
 
         $this->values = null;
+    }
+
+    /**
+     * Save an array over the one already saved. What the new one does not
+     * mention is kept, such as the translation in a language that is no
+     * longer a site language.
+     *
+     * @param  array<string, mixed>  $value
+     */
+    public function merge(string $key, array $value): void
+    {
+        $this->set($key, static::mergeKeys(Arr::wrap($this->get($key)), $value));
+    }
+
+    /**
+     * @param  array<mixed>  $saved
+     * @param  array<mixed>  $new
+     * @return array<mixed>
+     */
+    private static function mergeKeys(array $saved, array $new): array
+    {
+        // A list is replaced as a whole, so an item removed from it is gone.
+        if (array_is_list($new) || array_is_list($saved)) {
+            return $new;
+        }
+
+        foreach ($new as $key => $value) {
+            $saved[$key] = is_array($value) && is_array($saved[$key] ?? null)
+                ? static::mergeKeys($saved[$key], $value)
+                : $value;
+        }
+
+        return $saved;
     }
 
     /**

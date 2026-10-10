@@ -17,6 +17,7 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Melasistema\MelaCms\Http\Middleware\SetAdminLocale;
+use Melasistema\MelaCms\Settings;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -29,6 +30,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path(config('mela-cms.admin_path'))
             ->login()
+            // The name an admin gave the site, in the language of the panel.
+            ->brandName(fn () => app(Settings::class)->translated('site.name', config('app.name')))
             // Every user edits their own name, email and password here, whatever their role.
             ->profile(config('mela-cms.profile_page'), isSimple: false)
             // The core's own screens. A site removes or replaces one in config/mela-cms.php.

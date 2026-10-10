@@ -37,6 +37,7 @@ MelaCMS takes the other route:
 | Localized URLs: default language at the root, the others at `/it/...` or `it.example.com` | Available |
 | Language switcher data and `hreflang` tags | Available |
 | Translatable content: JSON columns, one form with a tab per language | Available |
+| Settings page: site name and description, contact details, social profiles | Available |
 | Content model, media, SEO | Planned |
 
 ## Requirements
@@ -120,7 +121,7 @@ If the email belongs to an existing user, that user keeps their password and gai
 | `locale_urls` | `'path'` | Where the other languages live: `'path'` for `example.com/it`, `'subdomain'` for `it.example.com` |
 | `admin_locale` | `null` | Language of the admin panel. `null` uses the app locale. Also a starting value |
 | `admin_path` | `admin` | URL path of the admin panel |
-| `pages` | `['languages' => ManageLanguages::class]` | The admin pages the core adds. Works like `resources` |
+| `pages` | `['settings' => ManageSettings::class, 'languages' => ManageLanguages::class]` | The admin pages the core adds. Works like `resources` |
 | `profile_page` | `EditProfile::class` | The page where a user edits their own account. `null` removes it; your own class replaces it |
 | `resources` | `['users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
 
@@ -307,6 +308,67 @@ Translations::make([
 | Removed language | Its translations stay in the database and come back if the language is added again |
 
 To change the page, extend `Melasistema\MelaCms\Filament\Pages\ManageLanguages` (its fields are in `formComponents()`) and name your class under `pages` in the config. Set `'languages' => null` to remove it.
+
+### Settings
+
+The core adds a **Settings** page at `/admin/settings`, for super-admins and admins, with what every site has:
+
+| Section | Fields | Read as |
+| :--- | :--- | :--- |
+| Site | Name and description, one per site language | `site.name`, `site.description` |
+| Contact | Email, phone, address | `site.contact.email`, `site.contact.phone`, `site.contact.address` |
+| Social profiles | Facebook, Instagram, LinkedIn, X, YouTube, TikTok | `site.social.instagram`, ... |
+
+Read them in site code through `Melasistema\MelaCms\Settings`:
+
+```php
+use Melasistema\MelaCms\Settings;
+
+$settings = app(Settings::class);
+
+$settings->get('site.contact.email');                    // 'info@example.com', or null
+$settings->get('site.contact.phone', '-');               // with a default
+$settings->translated('site.name', config('app.name'));  // in the language of the request
+array_filter($settings->get('site.social', []));         // ['instagram' => 'https://...'], only the ones filled in
+```
+
+`translated()` is for a value that has one entry per language. An empty translation falls back to the default language of the site, then to the default given.
+
+The site name is also the name shown in the admin panel. Until one is saved, the panel shows `APP_NAME`.
+
+To add settings of your own, extend the page, add fields, and name your class under `pages` in the config. Every field is saved under `site` at its own name:
+
+```php
+namespace App\Filament\Pages;
+
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Section;
+use Melasistema\MelaCms\Filament\Pages\ManageSettings;
+
+class Settings extends ManageSettings
+{
+    public static function formComponents(): array
+    {
+        return [
+            ...parent::formComponents(),
+            Section::make('Booking')->schema([
+                TextInput::make('booking.url')->url(),   // read as site.booking.url
+            ]),
+        ];
+    }
+}
+```
+
+```php
+// config/mela-cms.php
+'pages' => [
+    'settings' => App\Filament\Pages\Settings::class,
+],
+```
+
+Wrap a field in `Translations::make()` to have it per language. `socialNetworks()` can be overridden to change the list of profiles. Set `'settings' => null` to remove the page.
+
+All settings are stored in the `mela_settings` table and read with one query per request.
 
 ## Updating the core
 
