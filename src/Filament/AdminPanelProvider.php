@@ -16,6 +16,8 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Melasistema\MelaCms\Http\Middleware\SetAdminLocale;
+use Melasistema\MelaCms\Settings;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -28,11 +30,19 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path(config('mela-cms.admin_path'))
             ->login()
+            // The name an admin gave the site, in the language of the panel.
+            ->brandName(fn () => app(Settings::class)->translated('site.name', config('app.name')))
+            // Every user edits their own name, email and password here, whatever their role.
+            ->profile(config('mela-cms.profile_page'), isSimple: false)
+            // The core's own screens. A site removes or replaces one in config/mela-cms.php.
+            ->resources(array_values(array_filter(config('mela-cms.resources'))))
             // The site's own resources, pages and widgets live in the client app.
             ->discoverResources(in: app_path('Filament/Resources'), for: $namespace.'Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: $namespace.'Filament\\Pages')
             ->pages([
                 Dashboard::class,
+                // The core's own pages, removed or replaced the same way.
+                ...array_values(array_filter(config('mela-cms.pages'))),
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: $namespace.'Filament\\Widgets')
             ->widgets([
@@ -49,6 +59,8 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
+            // Persistent, so Livewire requests are in the admin language too.
+            ->middleware([SetAdminLocale::class], isPersistent: true)
             ->authMiddleware([
                 Authenticate::class,
             ]);

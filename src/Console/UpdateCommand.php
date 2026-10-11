@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Melasistema\MelaCms\Install\AgentGuide;
 use Melasistema\MelaCms\Install\ComposerScripts;
 use Melasistema\MelaCms\Install\Roles;
+use Melasistema\MelaCms\Install\StorageLink;
 use Melasistema\MelaCms\Install\StubPublisher;
 use Melasistema\MelaCms\Install\StubStatus;
 
@@ -20,12 +21,13 @@ class UpdateCommand extends Command
      * section of the agent guides and reports the templates that no longer
      * match the installed core.
      */
-    public function handle(Roles $roles, ComposerScripts $composerScripts, StubPublisher $stubs, AgentGuide $agentGuide): int
+    public function handle(Roles $roles, ComposerScripts $composerScripts, StubPublisher $stubs, AgentGuide $agentGuide, StorageLink $storageLink): int
     {
         $this->call('migrate');
         $roles->sync();
         $composerScripts->ensureFilamentUpgrade();
         $agentGuide->sync();
+        $storageLink->ensure();
 
         $outdated = array_filter($stubs->statuses(), fn (StubStatus $status) => $status !== StubStatus::Current);
 
