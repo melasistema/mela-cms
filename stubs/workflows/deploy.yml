@@ -135,6 +135,11 @@ jobs:
             fi
             "$PHP" -v
 
+            # The caches of the previous release describe its config, routes and
+            # events. Artisan itself can fail on them with the new code, so they
+            # go before the first artisan command. All three are rebuilt below.
+            rm -f bootstrap/cache/config.php bootstrap/cache/routes-v7.php bootstrap/cache/events.php
+
             # With set -e, a failed migration leaves the site in maintenance (safe)
             # rather than bringing a broken build back up.
             "$PHP" artisan down --secret="$MAINTENANCE_TOKEN"

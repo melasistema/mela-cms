@@ -63,6 +63,18 @@ it('copies the templates into the project', function () {
     }
 });
 
+it('ships a deploy that removes the caches of the previous release before it runs artisan', function () {
+    $this->install();
+
+    $deploy = file_get_contents($this->projectFile('.github/workflows/deploy.yml'));
+    $removal = strpos($deploy, 'rm -f bootstrap/cache/config.php bootstrap/cache/routes-v7.php bootstrap/cache/events.php');
+
+    // A cached config or route list of the previous release can make artisan
+    // itself fail with the new code.
+    expect($removal)->not->toBeFalse()
+        ->and($removal)->toBeLessThan(strpos($deploy, '" artisan '));
+});
+
 it('adds the Filament upgrade script to composer.json once', function () {
     $this->install();
     $this->install();
