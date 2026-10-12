@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/melasistema/mela-cms/compare/v0.2.2...v0.3.0) (2026-10-12)
+
+
+### Features
+
+* add mela:super-admin to create the first account on a deployed site ([d29d8de](https://github.com/melasistema/mela-cms/commit/d29d8def93bb9d4c5e22e2790901e765efe10826))
+
 ## [0.2.2](https://github.com/melasistema/mela-cms/compare/v0.2.1...v0.2.2) (2026-10-12)
 
 
