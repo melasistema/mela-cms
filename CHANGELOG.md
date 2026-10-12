@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/melasistema/mela-cms/compare/v0.3.1...v0.4.0) (2026-10-12)
+
+
+### Features
+
+* add mela:update --check and run it in the site's CI ([174d3f0](https://github.com/melasistema/mela-cms/commit/174d3f04f4bdf94017465c955c64181be1b8730f))
+
 ## [0.3.1](https://github.com/melasistema/mela-cms/compare/v0.3.0...v0.3.1) (2026-10-12)
 
 
