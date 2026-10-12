@@ -12,7 +12,8 @@ use Melasistema\MelaCms\Install\StubStatus;
 
 class UpdateCommand extends Command
 {
-    protected $signature = 'mela:update';
+    protected $signature = 'mela:update
+        {--check : Change nothing, and fail when the agent guides are behind the installed core}';
 
     protected $description = 'Apply a new MelaCMS core version after `composer update`: migrations, roles, agent guide and a template report';
 
@@ -23,6 +24,10 @@ class UpdateCommand extends Command
      */
     public function handle(Roles $roles, ComposerScripts $composerScripts, StubPublisher $stubs, AgentGuide $agentGuide, StorageLink $storageLink): int
     {
+        if ($this->option('check')) {
+            return $this->check($agentGuide);
+        }
+
         $this->call('migrate');
         $roles->sync();
         $composerScripts->ensureFilamentUpgrade();
@@ -49,5 +54,27 @@ class UpdateCommand extends Command
         ]);
 
         return self::SUCCESS;
+    }
+
+    /**
+     * For the CI of a site: a core update that arrives without `mela:update`
+     * (a Dependabot pull request) leaves the agent guides of the old version.
+     * Touches neither the database nor a file. The templates are not checked,
+     * because a file that differs can be the site's own change.
+     */
+    private function check(AgentGuide $agentGuide): int
+    {
+        $outdated = $agentGuide->outdated();
+
+        if ($outdated === []) {
+            $this->components->info('The agent guides match the installed MelaCMS core.');
+
+            return self::SUCCESS;
+        }
+
+        $this->components->error('The MelaCMS section of these files does not match the installed core: '.implode(', ', $outdated).'.');
+        $this->components->bulletList(['Run `php artisan mela:update` and commit the result.']);
+
+        return self::FAILURE;
     }
 }

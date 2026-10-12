@@ -82,6 +82,13 @@ jobs:
           cp .env.example .env
           php artisan key:generate
 
+      # A core update that arrives without `php artisan mela:update` (a
+      # Dependabot pull request) leaves AGENTS.md and CLAUDE.md with the rules
+      # of the previous version. Fails until it is run and committed. Reads two
+      # files, no database.
+      - name: Check the MelaCMS agent guides
+        run: php artisan mela:update --check
+
       # The Blade views reference the Vite manifest, so the assets must exist
       # before the feature tests render a page.
       - name: Build assets

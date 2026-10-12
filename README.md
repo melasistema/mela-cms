@@ -754,7 +754,9 @@ Never update on the server. The deploy builds `vendor/` from the committed `comp
 
 ### With Dependabot
 
-The installed `.github/dependabot.yml` opens a pull request on the site whenever a new core version is released, with the constraint raised and CI already run. It replaces the Composer command, not the rest: after merging it, pull, run `composer install` and `php artisan mela:update`, and commit the agent guides. Without `composer install` first, `mela:update` works on the old core still in `vendor/` and finds nothing to do.
+The installed `.github/dependabot.yml` opens a pull request on the site whenever a new core version is released, with the constraint raised and CI already run. It replaces the Composer command, not the rest: the agent guides still describe the previous version. Check out its branch, run `composer install` and `php artisan mela:update`, and commit the agent guides to it. Without `composer install` first, `mela:update` works on the old core still in `vendor/` and finds nothing to do.
+
+The site's CI makes sure this is not forgotten: it runs `php artisan mela:update --check`, which changes nothing and fails while the MelaCMS section of `AGENTS.md` or `CLAUDE.md` does not match the installed core. The pull request stays red until the guides are committed. A workflow file that differs from the core template does not fail the check, since it can be your own change.
 
 Dependabot needs the PHP version pin from [Installation](#installation) and, while the package is private, its two secrets.
 
@@ -764,7 +766,7 @@ The installer copies four files into the site. From then on they belong to the s
 
 | File | Runs on | Does |
 | :--- | :--- | :--- |
-| `.github/workflows/ci.yml` | Push to `development`, pull requests | Pint check, asset build, `php artisan test` |
+| `.github/workflows/ci.yml` | Push to `development`, pull requests | Pint check, agent guides check, asset build, `php artisan test` |
 | `.github/workflows/release.yml` | Push to `master` | CI, then the release PR, then the deploy when a release is created |
 | `.github/workflows/deploy.yml` | Called by the release, or by hand | Builds the site and copies it to the server over SSH |
 | `.github/dependabot.yml` | Daily | Pull request for a new MelaCMS version |
