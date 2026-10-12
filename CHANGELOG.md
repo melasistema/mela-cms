@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/melasistema/mela-cms/compare/v0.2.1...v0.2.2) (2026-10-12)
+
+
+### Bug Fixes
+
+* remove the caches of the previous release before the deploy runs artisan ([a48148a](https://github.com/melasistema/mela-cms/commit/a48148a3b5c383c3b3b90f4339b83523a5f5c307))
+
 ## [0.2.1](https://github.com/melasistema/mela-cms/compare/v0.2.0...v0.2.1) (2026-10-12)
 
 
