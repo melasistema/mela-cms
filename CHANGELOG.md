@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/melasistema/mela-cms/compare/v0.3.0...v0.3.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* stop the deploy with a message naming PHP_BIN when the server's PHP is below 8.4 ([6580805](https://github.com/melasistema/mela-cms/commit/65808050767598dc4a38286f7b4f6ecc3e769e60))
+
 ## [0.3.0](https://github.com/melasistema/mela-cms/compare/v0.2.2...v0.3.0) (2026-10-12)
 
 
