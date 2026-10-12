@@ -75,6 +75,35 @@ it('ships a deploy that removes the caches of the previous release before it run
         ->and($removal)->toBeLessThan(strpos($deploy, '" artisan '));
 });
 
+it('ships a deploy that names PHP_BIN when the PHP of the server is too old', function () {
+    $this->install();
+
+    $deploy = file_get_contents($this->projectFile('.github/workflows/deploy.yml'));
+    $check = strpos($deploy, "exit(PHP_VERSION_ID >= 80400 ? 0 : 1);'; then");
+
+    // Otherwise the first artisan command stops in Composer's platform check,
+    // whose message does not say which setting to change.
+    expect($check)->not->toBeFalse()
+        ->and($check)->toBeLessThan(strpos($deploy, '" artisan '))
+        ->and(substr($deploy, $check, 400))->toContain('Set the PHP_BIN repository variable')->toContain('exit 1');
+});
+
+it('runs the PHP version check of the deploy', function (int $minimum, int $exitCode) {
+    $deploy = file_get_contents(__DIR__.'/../../stubs/workflows/deploy.yml');
+
+    preg_match('/^ +if ! "\$PHP" -r .*?^ +fi$/ms', $deploy, $block);
+
+    $script = 'PHP='.escapeshellarg(PHP_BINARY)."\nPHP_BIN=php\n".str_replace('80400', (string) $minimum, $block[0])."\necho passed\n";
+
+    exec('bash -c '.escapeshellarg($script).' 2>&1', $output, $result);
+
+    expect($result)->toBe($exitCode)
+        ->and(implode("\n", $output))->toContain($exitCode === 0 ? 'passed' : "'php' on the server is PHP ".PHP_VERSION);
+})->with([
+    'a PHP that is new enough' => [80400, 0],
+    'a PHP that is too old' => [999999, 1],
+]);
+
 it('adds the Filament upgrade script to composer.json once', function () {
     $this->install();
     $this->install();

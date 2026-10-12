@@ -755,7 +755,7 @@ One-time setup on the site's GitHub repository:
 - Create the `development` and `master` branches.
 - Under Settings → Actions → General → Workflow permissions, enable **Allow GitHub Actions to create and approve pull requests**.
 - Commit `package-lock.json`. The workflows install with `npm ci`, which needs it.
-- To deploy, set the variables and secrets listed at the top of `.github/workflows/deploy.yml`: `DEPLOY_PATH`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `MAINTENANCE_TOKEN`.
+- To deploy, set the variables and secrets listed at the top of `.github/workflows/deploy.yml`: `DEPLOY_PATH`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `MAINTENANCE_TOKEN`. When `php` on the server's command line is older than 8.4, which is common on shared hosting, also set the `PHP_BIN` variable to the 8.4 binary, for example `php8.4`. The deploy stops with a message that says so.
 
 The deploy runs the migrations and creates no account, so after the first deploy nobody can log in yet. Once, over SSH, in the app directory on the server:
 

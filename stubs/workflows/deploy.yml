@@ -135,6 +135,15 @@ jobs:
             fi
             "$PHP" -v
 
+            # On shared hosting the command-line PHP is often older than the one
+            # serving the site. Without this check the deploy stops further down,
+            # in Composer's platform check, with a message that names no setting.
+            if ! "$PHP" -r 'exit(PHP_VERSION_ID >= 80400 ? 0 : 1);'; then
+              echo "ERROR: '$PHP_BIN' on the server is PHP $("$PHP" -r 'echo PHP_VERSION;'). The site needs PHP 8.4 or newer." >&2
+              echo "Set the PHP_BIN repository variable to the PHP 8.4 CLI binary, e.g. php8.4." >&2
+              exit 1
+            fi
+
             # The caches of the previous release describe its config, routes and
             # events. Artisan itself can fail on them with the new code, so they
             # go before the first artisan command. All three are rebuilt below.
