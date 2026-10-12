@@ -4,7 +4,7 @@ This site is built on [MelaCMS](https://github.com/melasistema/mela-cms). This s
 
 ### What is where
 
-- **MelaCMS core** lives in `vendor/melasistema/mela-cms`. Never edit it. It provides the admin panel, roles (`super-admin`, `admin`, `editor`), the `mela:install` and `mela:update` commands, and core migrations.
+- **MelaCMS core** lives in `vendor/melasistema/mela-cms`. Never edit it. It provides the admin panel, roles (`super-admin`, `admin`, `editor`), the `mela:install`, `mela:update` and `mela:super-admin` commands, and core migrations.
 - **This repo** holds everything specific to the site: models, migrations, Filament resources, Blade views, routes, the theme.
 
 ### Stack

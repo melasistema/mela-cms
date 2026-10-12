@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Melasistema\MelaCms\Console\InstallCommand;
 use Melasistema\MelaCms\Console\RegenerateMediaCommand;
+use Melasistema\MelaCms\Console\SuperAdminCommand;
 use Melasistema\MelaCms\Console\UpdateCommand;
 use Melasistema\MelaCms\Enums\Role;
 use Melasistema\MelaCms\Filament\AdminPanelProvider;
@@ -78,6 +79,7 @@ class MelaCmsServiceProvider extends ServiceProvider
             $this->commands([
                 InstallCommand::class,
                 UpdateCommand::class,
+                SuperAdminCommand::class,
                 RegenerateMediaCommand::class,
             ]);
 

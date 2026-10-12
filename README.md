@@ -30,7 +30,7 @@ MelaCMS takes the other route:
 | Roles `super-admin`, `admin`, `editor` | Available |
 | Users screen: create, edit and delete users, assign a role | Available |
 | Profile page: every user changes their own name, email and password | Available |
-| `mela:install` and `mela:update` commands | Available |
+| `mela:install`, `mela:update` and `mela:super-admin` commands | Available |
 | CI, release and deploy workflows for client sites | Available, not yet proven on a live site |
 | Languages page: site languages, default language, admin panel language | Available |
 | Admin panel in the chosen language | Available for Filament's own texts; the core's own labels are English only |
@@ -756,6 +756,14 @@ One-time setup on the site's GitHub repository:
 - Under Settings → Actions → General → Workflow permissions, enable **Allow GitHub Actions to create and approve pull requests**.
 - Commit `package-lock.json`. The workflows install with `npm ci`, which needs it.
 - To deploy, set the variables and secrets listed at the top of `.github/workflows/deploy.yml`: `DEPLOY_PATH`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `MAINTENANCE_TOKEN`.
+
+The deploy runs the migrations and creates no account, so after the first deploy nobody can log in yet. Once, over SSH, in the app directory on the server:
+
+```bash
+php artisan mela:super-admin
+```
+
+It creates the three roles if they are missing, asks for an email, a name and a password, and creates the super-admin account. If the email belongs to an existing user, that user keeps their name and password and gains the role, so the same command also brings back access to a site that has lost its last super-admin. Without interaction, pass `--email`, `--password` and optionally `--name`. The other users are then created in the panel.
 
 The site is built in GitHub Actions, so the server needs only PHP 8.4 and SSH access. Two limits to know about: the deploy copies over the live directory, so files removed from the repository stay on the server, and there is no rollback step.
 

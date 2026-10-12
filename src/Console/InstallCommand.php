@@ -6,7 +6,6 @@ use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Process;
 use Melasistema\MelaCms\Concerns\HasCmsAccess;
 use Melasistema\MelaCms\Install\AgentGuide;
@@ -85,6 +84,7 @@ class InstallCommand extends Command
             'The workflows expect the branches "development" (work) and "master" (live).',
             'To release from GitHub, enable "Allow GitHub Actions to create and approve pull requests" in the repo settings.',
             'To deploy, set the variables and secrets listed at the top of .github/workflows/deploy.yml.',
+            'After the first deploy, run `php artisan mela:super-admin` on the server to create the account that logs in there.',
         ]);
 
         return self::SUCCESS;
@@ -194,52 +194,20 @@ class InstallCommand extends Command
         }
     }
 
+    /**
+     * Skipped when the site has a super-admin and no other account is named.
+     */
     private function createSuperAdmin(Roles $roles): bool
     {
-        $email = $this->option('email');
-        $password = $this->option('password');
-
-        if ($email === null && $roles->hasSuperAdmin()) {
+        if ($this->option('email') === null && $roles->hasSuperAdmin()) {
             return true;
         }
 
-        if ($this->input->isInteractive()) {
-            $name = $this->option('name') ?? $this->ask('Super-admin name', 'Super Admin');
-
-            while (! $this->validEmail($email)) {
-                $email = $this->ask('Super-admin email');
-            }
-
-            while (! $this->validPassword($password)) {
-                $password = $this->secret('Super-admin password (at least 8 characters)');
-            }
-        } else {
-            $name = $this->option('name') ?? 'Super Admin';
-        }
-
-        if (! $this->validEmail($email) || ! $this->validPassword($password)) {
-            $this->components->error('Pass a valid --email and a --password of at least 8 characters when running without interaction.');
-
-            return false;
-        }
-
-        $model = $this->userModel();
-        $user = $model::query()->where('email', $email)->first();
-
-        // An existing account keeps its password and only gains the role.
-        if ($user === null) {
-            $user = new $model;
-            $user->forceFill([
-                'name' => $name,
-                'email' => $email,
-                'password' => Hash::make($password),
-                'email_verified_at' => now(),
-            ])->save();
-        }
-
-        $roles->makeSuperAdmin($user);
-
-        return true;
+        return $this->call('mela:super-admin', array_filter([
+            '--name' => $this->option('name'),
+            '--email' => $this->option('email'),
+            '--password' => $this->option('password'),
+        ], fn (?string $value) => $value !== null)) === self::SUCCESS;
     }
 
     private function publishStubs(StubPublisher $stubs): void
@@ -270,16 +238,6 @@ class InstallCommand extends Command
 
         return $this->input->isInteractive()
             && $this->confirm("{$destination} differs from the core template. Replace it?", false);
-    }
-
-    private function validEmail(?string $email): bool
-    {
-        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
-    }
-
-    private function validPassword(?string $password): bool
-    {
-        return $password !== null && mb_strlen($password) >= 8;
     }
 
     /**

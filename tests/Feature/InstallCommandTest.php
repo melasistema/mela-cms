@@ -23,9 +23,9 @@ it('creates the core roles and a super-admin', function () {
 it('asks for the super-admin when run interactively', function () {
     $this->artisan('mela:install')
         ->expectsQuestion('Site locales (comma separated)', 'en,it')
-        ->expectsQuestion('Super-admin name', 'Luca')
         ->expectsQuestion('Super-admin email', 'not-an-email')
         ->expectsQuestion('Super-admin email', 'luca@example.com')
+        ->expectsQuestion('Super-admin name', 'Luca')
         ->expectsQuestion('Super-admin password (at least 8 characters)', 'short')
         ->expectsQuestion('Super-admin password (at least 8 characters)', 'correct-horse')
         ->assertSuccessful();
