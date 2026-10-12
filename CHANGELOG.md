@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/melasistema/mela-cms/compare/v0.2.0...v0.2.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* give missing config keys their defaults when the config is cached ([0d44552](https://github.com/melasistema/mela-cms/commit/0d445523e9f344857f6adb39e3702e9d6517a66d))
+
 ## [0.2.0](https://github.com/melasistema/mela-cms/compare/v0.1.0...v0.2.0) (2026-10-11)
 
 
