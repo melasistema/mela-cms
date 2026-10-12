@@ -27,10 +27,7 @@ class MelaCmsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/mela-cms.php', 'mela-cms');
-        $this->mergeDefaults('resources');
-        $this->mergeDefaults('pages');
-        $this->mergeDefaults('media');
+        $this->mergeConfig();
 
         $this->app->singleton(Project::class, fn () => new Project($this->app->basePath()));
         $this->app->scoped(Settings::class);
@@ -91,14 +88,20 @@ class MelaCmsServiceProvider extends ServiceProvider
     }
 
     /**
-     * mergeConfigFrom() merges one level deep. A site whose published config
-     * predates a core resource, page or media option would otherwise never
-     * get it.
+     * Not mergeConfigFrom(), for two reasons. It does nothing while the config
+     * is cached, so a cache made before a core update would lack every key the
+     * new version adds. And it merges one level deep, so a site whose published
+     * config predates a core resource, page or media option would never get it.
      */
-    private function mergeDefaults(string $key): void
+    private function mergeConfig(): void
     {
-        $defaults = (require __DIR__.'/../config/mela-cms.php')[$key];
+        $defaults = require __DIR__.'/../config/mela-cms.php';
+        $config = [...$defaults, ...config('mela-cms', [])];
 
-        config(["mela-cms.{$key}" => [...$defaults, ...config("mela-cms.{$key}")]]);
+        foreach (['resources', 'pages', 'media'] as $key) {
+            $config[$key] = [...$defaults[$key], ...($config[$key] ?? [])];
+        }
+
+        config(['mela-cms' => $config]);
     }
 }
