@@ -31,7 +31,7 @@ MelaCMS takes the other route:
 | Users screen: create, edit and delete users, assign a role | Available |
 | Profile page: every user changes their own name, email and password | Available |
 | `mela:install`, `mela:update` and `mela:super-admin` commands | Available |
-| CI, release and deploy workflows for client sites | Available, not yet proven on a live site |
+| CI, release and deploy workflows for client sites | Available, in use on a live site |
 | Languages page: site languages, default language, admin panel language | Available |
 | Admin panel in the chosen language | Available for Filament's own texts; the core's own labels are English only |
 | Localized URLs: default language at the root, the others at `/it/...` or `it.example.com` | Available |
@@ -50,6 +50,7 @@ MelaCMS takes the other route:
 - Laravel 13
 - Node 24, for the site's asset build
 - A database supported by Laravel
+- The `intl` PHP extension, for the names of the languages
 - The GD or Imagick PHP extension with WebP support, for the image sizes of the media library
 
 ## Installation
@@ -64,6 +65,17 @@ php artisan mela:install
 ```
 
 Then open `/admin` and log in with the super-admin account you just created.
+
+If artisan stops with "Invalid URI: Host is malformed", look at `APP_URL` in `.env`: some versions of the Laravel installer write the port twice (`http://localhost:8000:8000`).
+
+Before the first push, tell Composer which PHP version the server runs:
+
+```bash
+composer config platform.php 8.4.24   # the version `php -v` prints on the server
+composer update --lock
+```
+
+Composer then resolves every update for that version, on any machine. Dependabot needs it: without the pin it resolves for PHP 8.4.0, which some packages no longer accept, and its update fails with `dependency_file_not_resolvable`.
 
 ### While the package is private
 
@@ -82,6 +94,8 @@ On the site's GitHub repository, so the workflows can install the package:
 | Actions secret | `COMPOSER_AUTH` | `{"github-oauth":{"github.com":"<token>"}}` |
 | Dependabot secret | `COMPOSER_AUTH` | Same value |
 | Dependabot secret | `COMPOSER_TOKEN` | The token alone |
+
+`COMPOSER_AUTH` holds the whole JSON, not the token alone: with the bare token the workflows stop with "COMPOSER_AUTH environment variable is malformed".
 
 Then uncomment the two `registries` blocks in the site's `.github/dependabot.yml`.
 
@@ -723,14 +737,26 @@ To change the screen, extend `Melasistema\MelaCms\Filament\Resources\Media\Media
 
 ## Updating the core
 
+On your machine, in the site:
+
 ```bash
 composer update melasistema/mela-cms
 php artisan mela:update
 ```
 
-`mela:update` runs new core migrations, restores any missing core role, links `public/storage` if the link is missing and refreshes the MelaCMS section of `AGENTS.md` and `CLAUDE.md`. It never overwrites a file the site owns: it lists the workflow files that differ from the core templates and leaves the decision to you. Run `mela:install` again to review them one by one.
+While the core is below `1.0`, a new minor version is outside the constraint (`^0.2` does not allow `0.3.0`). Raise it instead: `composer require melasistema/mela-cms:^0.3`.
 
-The installed `.github/dependabot.yml` opens a pull request on the site whenever a new core version is released.
+`mela:update` runs new core migrations, restores any missing core role, links `public/storage` if the link is missing and refreshes the MelaCMS section of `AGENTS.md` and `CLAUDE.md`. It never overwrites a file the site owns: it lists the workflow files that differ from the core templates and leaves the decision to you. To take the new version of one, copy it from `vendor/melasistema/mela-cms/stubs/`, or run `mela:install` again to review them one by one.
+
+Then commit `composer.json`, `composer.lock`, the two agent guides and any workflow file you copied, as a `fix:` (for example `fix: update MelaCMS to 0.3.0`), and release the site as usual. A `chore:` would not make a release, so nothing would be deployed.
+
+Never update on the server. The deploy builds `vendor/` from the committed `composer.lock`, so the next deploy would put the old core back, and the new one would have gone live without passing CI.
+
+### With Dependabot
+
+The installed `.github/dependabot.yml` opens a pull request on the site whenever a new core version is released, with the constraint raised and CI already run. It replaces the Composer command, not the rest: after merging it, pull, run `composer install` and `php artisan mela:update`, and commit the agent guides. Without `composer install` first, `mela:update` works on the old core still in `vendor/` and finds nothing to do.
+
+Dependabot needs the PHP version pin from [Installation](#installation) and, while the package is private, its two secrets.
 
 ## Releasing and deploying a site
 
@@ -750,12 +776,20 @@ The flow on a site:
 3. [release-please](https://github.com/googleapis/release-please) opens a release PR with the next version and the `CHANGELOG.md` entry.
 4. Merge the release PR. This creates the tag and the GitHub Release, and deploys that tag.
 
+So a release takes two merges. Merging `development` into `master` only opens the release PR and deploys nothing.
+
 One-time setup on the site's GitHub repository:
 
 - Create the `development` and `master` branches.
 - Under Settings → Actions → General → Workflow permissions, enable **Allow GitHub Actions to create and approve pull requests**.
 - Commit `package-lock.json`. The workflows install with `npm ci`, which needs it.
 - To deploy, set the variables and secrets listed at the top of `.github/workflows/deploy.yml`: `DEPLOY_PATH`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` and `MAINTENANCE_TOKEN`. When `php` on the server's command line is older than 8.4, which is common on shared hosting, also set the `PHP_BIN` variable to the 8.4 binary, for example `php8.4`. The deploy stops with a message that says so.
+
+One-time setup on the server:
+
+- PHP 8.4 on the command line, with the extensions listed under [Requirements](#requirements). Check with `php -v` and `php -m` over SSH: the command-line PHP can differ from the one serving the site.
+- The web root points to `public/` inside `DEPLOY_PATH`.
+- A `.env` in `DEPLOY_PATH` with `APP_KEY`, `APP_URL` and the database. The deploy never copies or changes it.
 
 The deploy runs the migrations and creates no account, so after the first deploy nobody can log in yet. Once, over SSH, in the app directory on the server:
 
@@ -766,6 +800,19 @@ php artisan mela:super-admin
 It creates the three roles if they are missing, asks for an email, a name and a password, and creates the super-admin account. If the email belongs to an existing user, that user keeps their name and password and gains the role, so the same command also brings back access to a site that has lost its last super-admin. Without interaction, pass `--email`, `--password` and optionally `--name`. The other users are then created in the panel.
 
 The site is built in GitHub Actions, so the server needs only PHP 8.4 and SSH access. Two limits to know about: the deploy copies over the live directory, so files removed from the repository stay on the server, and there is no rollback step.
+
+The post-deployment script stops at the first error, so a failed migration leaves the site in maintenance mode. To deploy again without a new release:
+
+- A failed deploy: fix the cause, then **Re-run failed jobs** on the workflow run, or `gh run rerun <run id> --failed`. Variables and secrets are read again.
+- Any tag or branch: Actions → Deploy → Run workflow.
+
+| Problem | Cause | Fix |
+| :--- | :--- | :--- |
+| The deploy stops with "'php' on the server is PHP 8.3..." | The command-line `php` is older than 8.4 | Set the `PHP_BIN` variable, then run the failed deploy again |
+| The copy step ends with `dial tcp ...:22: i/o timeout` | The server did not answer in time. Nothing was copied | Run the failed deploy again |
+| `development` was merged into `master` and nothing was deployed | That merge only opens the release PR | Merge the release PR |
+| Nobody can log in on a freshly deployed site | The deploy creates no account | `php artisan mela:super-admin` over SSH |
+| Dependabot's update fails with `dependency_file_not_resolvable` | No PHP version pin in `composer.json` | The pin from [Installation](#installation), committed |
 
 A site that is not deployed through GitHub Actions can delete the `deploy` job and `deploy.yml`. Versioning and the changelog keep working without them.
 
