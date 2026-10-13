@@ -100,6 +100,39 @@ it('uses the address of the default language where a language has none', functio
     $this->get('/it/contact')->assertOk()->assertSee('Contact');
 });
 
+it('keeps the address of a page when the default language changes', function () {
+    page();
+    $page = page([
+        'title' => ['en' => 'Contact'],
+        'slug' => ['en' => 'contact'],
+        'body' => ['en' => '<p>Write to us</p>'],
+    ]);
+
+    app(Languages::class)->update(['en', 'it'], 'it', 'en');
+
+    $this->get('/contact')->assertOk();
+    $this->get('/en/contact')->assertOk()->assertSee('Contact')->assertSee('Write to us');
+    $this->get('/chi-siamo')->assertOk();
+    $this->get('/about')->assertNotFound();
+
+    expect($page->fresh()->paths())->toBe(['it' => 'contact', 'en' => 'contact'])
+        ->and($page->fresh()->url('it'))->toBe('http://localhost/contact');
+});
+
+it('looks for an address in the site languages in their order', function () {
+    app(Languages::class)->update(['en', 'it', 'de'], 'en', 'en');
+
+    $german = page(['title' => ['de' => 'Kontakt'], 'slug' => ['de' => 'kontakt']]);
+    $italian = page(['title' => ['it' => 'Storia', 'de' => 'Geschichte'], 'slug' => ['it' => 'storia', 'de' => 'geschichte']]);
+
+    expect(Page::whereSlug('kontakt', 'en')->exists())->toBeTrue()
+        ->and(Page::whereSlug('kontakt', 'it')->exists())->toBeTrue()
+        ->and(Page::whereSlug('storia', 'en')->exists())->toBeTrue()
+        ->and(Page::whereSlug('geschichte', 'en')->exists())->toBeFalse()
+        ->and($german->slugs())->toBe(['en' => 'kontakt', 'it' => 'kontakt', 'de' => 'kontakt'])
+        ->and($italian->slugs())->toBe(['en' => 'storia', 'it' => 'storia', 'de' => 'geschichte']);
+});
+
 it('serves an address with more than one level', function () {
     page(['slug' => ['en' => 'services/web-design']]);
 

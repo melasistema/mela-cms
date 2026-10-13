@@ -63,6 +63,18 @@ class Languages
         return array_slice($this->all(), 1);
     }
 
+    /**
+     * Where the slug of a record is looked for when the language of the
+     * request, or the given one, has none: that language, then the default
+     * language, then the other site languages in their order.
+     *
+     * @return list<string>
+     */
+    public function fallbacks(?string $locale = null): array
+    {
+        return array_values(array_unique([$locale ?? $this->current(), ...$this->all()]));
+    }
+
     public function has(string $locale): bool
     {
         return in_array($locale, $this->all(), true);

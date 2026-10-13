@@ -386,7 +386,7 @@ class ServiceController
 }
 ```
 
-`whereSlug()` looks for the slug in the language of the request. Both calls in `show()` are needed on every route that shows one record: without `localize()` the language switcher points to an address that does not exist, and without `for()` the page has the title of the site.
+`whereSlug()` looks for the slug in the language of the request. A language without a slug uses the one of the default language, then of the next site language that has one. Both calls in `show()` are needed on every route that shows one record: without `localize()` the language switcher points to an address that does not exist, and without `for()` the page has the title of the site.
 
 ### 5. Routes
 

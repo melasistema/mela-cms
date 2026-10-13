@@ -417,6 +417,7 @@ The core answers every address that no route of the site matches. It looks for t
 | `/about` | The page whose address is `about` in the default language |
 | `/it/chi-siamo` | The page whose Italian address is `chi-siamo` |
 | `/it/about` | The page whose address is `about` in the default language, when it has no Italian address |
+| `/about`, after the default language became Italian | The same page, while it has no Italian address: a language without an address uses the one of the default language, then of the next site language that has one |
 | `/` | The page chosen as home page on the Settings page |
 
 A route of the site always wins, so the Pages screen refuses an address that a route of the site already answers. A route added later still wins over a page saved before it. A fresh Laravel app has a route for `/` in `routes/web.php`: remove it to let the home page setting work. A draft answers with a 404, except for someone logged in who may edit pages. `@hreflang` and `alternates()` give the address of the page in each language.
@@ -550,7 +551,7 @@ Route::get('/blog/{slug}', function (string $slug) {
 
 | Part | What it does |
 | :--- | :--- |
-| `HasSlug` | `whereSlug($slug)` finds the record in the language of the request; a language without a slug uses the one of the default language. `slugs()` gives the slug in every language |
+| `HasSlug` | `whereSlug($slug)` finds the record in the language of the request; a language without a slug uses the one of the default language, then of the next site language that has one, so a record keeps its address when the default language changes. `slugIn($locale)` gives that slug, `slugs()` gives it for every language |
 | `Publishable` | `published()` keeps what visitors may see; `isPublished()` and `status()` (draft, scheduled, published), which a table column shows as a badge with `->state(fn ($record) => $record->status())->badge()` |
 | `SlugInput` | Accepts lowercase letters, numbers and hyphens, and refuses a slug another record of the model has in the same language. `SlugInput::fill()` on the title writes the slug while it is empty. `->path()` allows levels |
 | `RichText` | A rich text field whose images go into the media library. Printed with `@richtext($post->body)` |

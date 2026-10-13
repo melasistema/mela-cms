@@ -101,7 +101,7 @@ class Page extends Model
             return '';
         }
 
-        return (string) $this->getTranslation('slug', $locale ?? app(Languages::class)->current());
+        return (string) $this->slugIn($locale);
     }
 
     /**
