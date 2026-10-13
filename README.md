@@ -419,7 +419,7 @@ The core answers every address that no route of the site matches. It looks for t
 | `/it/about` | The page whose address is `about` in the default language, when it has no Italian address |
 | `/` | The page chosen as home page on the Settings page |
 
-A route of the site always wins. A fresh Laravel app has a route for `/` in `routes/web.php`: remove it to let the home page setting work. A draft answers with a 404, except for someone logged in who may edit pages. `@hreflang` and `alternates()` give the address of the page in each language.
+A route of the site always wins, so the Pages screen refuses an address that a route of the site already answers. A route added later still wins over a page saved before it. A fresh Laravel app has a route for `/` in `routes/web.php`: remove it to let the home page setting work. A draft answers with a 404, except for someone logged in who may edit pages. `@hreflang` and `alternates()` give the address of the page in each language.
 
 Until the site has its own view, the core shows a page with a plain one. Create `resources/views/pages/default.blade.php` to give the pages the look of the site:
 

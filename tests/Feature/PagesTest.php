@@ -291,6 +291,36 @@ it('refuses an address that cannot work', function (string $slug) {
     'empty' => '',
 ]);
 
+it('refuses an address that a route of the site answers', function (string $slug) {
+    Route::get('blog', fn () => 'The blog');
+    Route::get('blog/{post}', fn () => 'A post');
+    Route::post('contact', fn () => 'Sent');
+
+    $this->actingAs(pageUser(Role::Editor));
+
+    Livewire::test(CreatePage::class)
+        ->fillForm(['title.en' => 'New', 'slug.en' => 'blog', 'title.it' => 'Nuova', 'slug.it' => $slug])
+        ->call('create')
+        ->assertHasFormErrors(['slug.en', 'slug.it']);
+})->with([
+    'a route' => 'blog',
+    'a route with a parameter' => 'blog/first-post',
+    'a route for another method' => 'contact',
+]);
+
+it('accepts an address next to the routes of the site', function () {
+    Route::get('blog/{post}', fn () => 'A post');
+
+    $this->actingAs(pageUser(Role::Editor));
+
+    Livewire::test(CreatePage::class)
+        ->fillForm(['title.en' => 'New', 'slug.en' => 'blog', 'title.it' => 'Nuova', 'slug.it' => 'blog/first-post/comments'])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $this->get('/blog')->assertOk()->assertSee('New');
+});
+
 it('accepts the same address in two languages and the own address of a page', function () {
     $this->actingAs(pageUser(Role::Editor));
 

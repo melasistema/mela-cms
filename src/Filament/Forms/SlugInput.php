@@ -8,6 +8,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Melasistema\MelaCms\Languages;
 
@@ -49,7 +51,7 @@ class SlugInput extends TextInput
                     return;
                 }
 
-                if ($component->isPath && in_array(Str::before($value, '/'), $component->reservedSegments(), true)) {
+                if ($component->isPath && (in_array(Str::before($value, '/'), $component->reservedSegments(), true) || $component->hasRoute($value))) {
                     $fail('This address is already used by the site.');
 
                     return;
@@ -63,8 +65,8 @@ class SlugInput extends TextInput
 
     /**
      * The slug is a whole address under the root of the site: it may have
-     * levels (`services/web-design`) and may not start like a language or
-     * like the admin panel.
+     * levels (`services/web-design`), and may not start like a language or
+     * like the admin panel, nor be an address a route of the site answers.
      */
     public function path(bool $condition = true): static
     {
@@ -116,6 +118,24 @@ class SlugInput extends TextInput
             ->where($column, $slug)
             ->when($record instanceof Model && $record->exists, fn ($query) => $query->whereKeyNot($record->getKey()))
             ->exists();
+    }
+
+    /**
+     * Whether a route of the site answers the address. Pages are served by
+     * the fallback route, so the page would never be shown. A route for
+     * another method counts: Laravel answers a visit with a 405.
+     */
+    protected function hasRoute(string $path): bool
+    {
+        $request = Request::create(request()->getSchemeAndHttpHost().'/'.$path);
+
+        foreach (Route::getRoutes() as $route) {
+            if (! $route->isFallback && $route->matches($request, includingMethod: false)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
