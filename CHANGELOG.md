@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/melasistema/mela-cms/compare/v0.4.1...v0.4.2) (2026-10-13)
+
+
+### Bug Fixes
+
+* refuse a page address that a route of the site already answers ([4eda948](https://github.com/melasistema/mela-cms/commit/4eda948a118a5c30c8ce6c63bfb07b0c5456eb2c))
+
 ## [0.4.1](https://github.com/melasistema/mela-cms/compare/v0.4.0...v0.4.1) (2026-10-13)
 
 
