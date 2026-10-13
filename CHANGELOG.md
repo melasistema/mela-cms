@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/melasistema/mela-cms/compare/v0.4.0...v0.4.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* create the core roles after every migration run ([fd1a4d0](https://github.com/melasistema/mela-cms/commit/fd1a4d0a1e0ce3ad3fc1ad4bd8724ee4f6ebc14d))
+
 ## [0.4.0](https://github.com/melasistema/mela-cms/compare/v0.3.1...v0.4.0) (2026-10-12)
 
 
