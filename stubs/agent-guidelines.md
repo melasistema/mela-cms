@@ -49,7 +49,7 @@ An entity is content of this site that is not a page: a service, a post, a proje
 4. A controller and two routes in `routes/web.php` (list and single record), written once for every language. The single record is found with `Service::published()->whereSlug($slug)->firstOrFail()`, then `app(\Melasistema\MelaCms\Languages::class)->localize($service->paths())` and `app(\Melasistema\MelaCms\Seo::class)->for($service)`.
 5. Blade views in the layout of the site.
 6. The model class in `sitemap` in `config/mela-cms.php`.
-7. A feature test of the address on the site and of the admin form. In a test the roles do not exist until `app(\Melasistema\MelaCms\Install\Roles::class)->sync()` has run.
+7. A feature test of the address on the site and of the admin form. The core roles exist in a test that migrates its database (`RefreshDatabase`).
 
 - Print rich text with `@richtext($model->body)`, never `{!! !!}`. Show the status of a record in a table with `TextColumn::make('status')->state(fn ($record) => $record->status())->badge()`.
 

@@ -3,9 +3,13 @@
 namespace Melasistema\MelaCms;
 
 use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Database\Events\NoPendingMigrations;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Melasistema\MelaCms\Console\InstallCommand;
 use Melasistema\MelaCms\Console\RegenerateMediaCommand;
@@ -17,6 +21,7 @@ use Melasistema\MelaCms\Http\Controllers\PageController;
 use Melasistema\MelaCms\Http\Controllers\SitemapController;
 use Melasistema\MelaCms\Http\Middleware\SetLocale;
 use Melasistema\MelaCms\Install\Project;
+use Melasistema\MelaCms\Install\Roles;
 use Melasistema\MelaCms\Models\Media;
 use Melasistema\MelaCms\Models\Page;
 use Melasistema\MelaCms\Policies\ContentPolicy;
@@ -74,6 +79,20 @@ class MelaCmsServiceProvider extends ServiceProvider
         Gate::policy(config('auth.providers.users.model'), UserPolicy::class);
         Gate::policy(Media::class, MediaPolicy::class);
         Gate::policy(Page::class, ContentPolicy::class);
+
+        // The roles are rows, not a migration. A deploy only migrates, so they
+        // are created after every `migrate`, also one with nothing to run:
+        // that is how a role added by a core update reaches a server.
+        Event::listen([MigrationsEnded::class, NoPendingMigrations::class], function (MigrationsEnded|NoPendingMigrations $event) {
+            if ($event->method !== 'up' || ($event->options['pretend'] ?? false)) {
+                return;
+            }
+
+            // The site publishes the Spatie migration with `mela:install`.
+            if (Schema::hasTable(config('permission.table_names.roles'))) {
+                $this->app->make(Roles::class)->sync();
+            }
+        });
 
         if ($this->app->runningInConsole()) {
             $this->commands([

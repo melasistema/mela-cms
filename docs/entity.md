@@ -512,7 +512,6 @@ use App\Models\Service;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Melasistema\MelaCms\Install\Roles;
 use Melasistema\MelaCms\Languages;
 use Tests\TestCase;
 
@@ -527,9 +526,6 @@ class ServiceTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
-
-        // The test database has no roles until they are created.
-        app(Roles::class)->sync();
 
         $this->locale = app(Languages::class)->default();
     }

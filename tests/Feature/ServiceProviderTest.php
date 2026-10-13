@@ -1,10 +1,14 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Melasistema\MelaCms\Enums\Role;
 use Melasistema\MelaCms\Filament\Pages\ManageSettings;
 use Melasistema\MelaCms\Filament\Resources\Pages\PageResource;
 use Melasistema\MelaCms\Filament\Resources\Users\UserResource;
 use Melasistema\MelaCms\MelaCmsServiceProvider;
 use Melasistema\MelaCms\Models\Page;
+use Spatie\Permission\Models\Role as RoleModel;
 
 it('registers the service provider', function () {
     expect(app()->getProviders(MelaCmsServiceProvider::class))->not->toBeEmpty();
@@ -43,4 +47,44 @@ it('gives the keys missing from a stale config cache their defaults', function (
     expect(config('mela-cms.locales'))->toBe(['en', 'it'])
         ->and(config('mela-cms.admin_path'))->toBe('cms')
         ->and(config('mela-cms.resources.users'))->toBe(UserResource::class);
+});
+
+it('creates the core roles after a migration run, as a deploy does', function () {
+    $this->install();
+
+    $this->artisan('migrate:fresh')->assertSuccessful();
+
+    expect(RoleModel::pluck('name')->all())->toEqualCanonicalizing(Role::values());
+});
+
+it('creates a missing core role when there is nothing to migrate', function () {
+    $this->install();
+
+    RoleModel::findByName(Role::Editor->value)->delete();
+
+    // A core update that adds a role and no migration.
+    $this->artisan('migrate')->assertSuccessful();
+
+    expect(RoleModel::pluck('name')->all())->toEqualCanonicalizing(Role::values());
+});
+
+it('creates no roles when a migration run is only shown or rolled back', function () {
+    $this->install();
+
+    RoleModel::query()->delete();
+
+    // One migration to run again, so there is something to show.
+    DB::table('migrations')->where('migration', 'like', '%_create_mela_settings_table')->delete();
+
+    $this->artisan('migrate', ['--pretend' => true])->assertSuccessful();
+    $this->artisan('migrate:rollback', ['--pretend' => true])->assertSuccessful();
+
+    expect(RoleModel::count())->toBe(0);
+});
+
+it('migrates a site that does not have the roles table yet', function () {
+    // #[WithMigration] has run the migrations without the Spatie one.
+    $this->artisan('migrate')->assertSuccessful();
+
+    expect(Schema::hasTable(config('permission.table_names.roles')))->toBeFalse();
 });
