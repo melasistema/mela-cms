@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/melasistema/mela-cms/compare/v0.4.2...v0.4.3) (2026-10-13)
+
+
+### Bug Fixes
+
+* keep the address of a page when the default language changes ([b8c332c](https://github.com/melasistema/mela-cms/commit/b8c332c5bcf3c3f5923c92c34133d1ba1443dbfb))
+
 ## [0.4.2](https://github.com/melasistema/mela-cms/compare/v0.4.1...v0.4.2) (2026-10-13)
 
 
