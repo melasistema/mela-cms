@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/melasistema/mela-cms/compare/v0.4.3...v0.4.4) (2026-10-14)
+
+
+### Bug Fixes
+
+* find a page in the admin search whatever the case of its letters ([#12](https://github.com/melasistema/mela-cms/issues/12)) ([8eecdd0](https://github.com/melasistema/mela-cms/commit/8eecdd09bfc98c65e86ff64935621ba2793b2ac2))
+
 ## [0.4.3](https://github.com/melasistema/mela-cms/compare/v0.4.2...v0.4.3) (2026-10-13)
 
 
