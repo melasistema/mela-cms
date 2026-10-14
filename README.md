@@ -661,7 +661,7 @@ Every image gets these sizes at upload, as WebP files next to the original:
 | `medium` | 800 wide, same proportions |
 | `large` | 1600 wide, same proportions |
 
-An image is never enlarged, and the original is kept as uploaded. Animated GIFs, PDFs and other documents keep the original only.
+An image is never enlarged, and the original is kept as uploaded. Animated GIFs, PDFs and other documents keep the original only. So does an image too large to resize within PHP's `memory_limit` with GD (about 15 bytes per pixel: a 24-megapixel photo needs about 360 MB); the error is reported to the log and the upload still succeeds.
 
 #### Giving a model an image
 

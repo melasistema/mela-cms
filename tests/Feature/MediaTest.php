@@ -3,6 +3,7 @@
 use Filament\Actions\Testing\TestAction;
 use Filament\Panel;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Melasistema\MelaCms\Enums\Role;
@@ -112,6 +113,32 @@ it('adds a file that cannot be read as an image without its sizes', function () 
     expect($media->conversions)->toBeNull()
         ->and($media->width)->toBeNull();
 });
+
+it('adds an image too large for the memory limit without its sizes', function () {
+    Exceptions::fake();
+
+    // Only the header is needed: 30000x20000 pixels, which GD would hold in
+    // gigabytes. Decoding it would end the request with a fatal error.
+    $header = "\x89PNG\r\n\x1a\n".pack('N', 13).'IHDR'.pack('NN', 30000, 20000)."\x08\x02\x00\x00\x00".pack('N', 0);
+    Storage::disk('public')->put('media/huge.png', $header);
+
+    $limit = ini_get('memory_limit');
+    ini_set('memory_limit', '512M');
+
+    try {
+        $media = Media::fromFile('media/huge.png', 'huge.png');
+    } finally {
+        ini_set('memory_limit', $limit);
+    }
+
+    expect($media->exists)->toBeTrue()
+        ->and($media->conversions)->toBeNull()
+        ->and($media->width)->toBe(30000)
+        ->and($media->height)->toBe(20000)
+        ->and($media->url('thumb'))->toBe($media->url());
+
+    Exceptions::assertReported(fn (RuntimeException $exception) => str_contains($exception->getMessage(), 'memory limit'));
+})->skip(extension_loaded('imagick'), 'Imagick allocates outside of the PHP memory limit.');
 
 it('deletes the file and its sizes with the record', function () {
     $media = image();
