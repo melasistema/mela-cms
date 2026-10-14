@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/melasistema/mela-cms/compare/v0.4.5...v0.5.0) (2026-10-14)
+
+
+### Features
+
+* let a site configure the admin panel ([7db2750](https://github.com/melasistema/mela-cms/commit/7db27509a24a7cd09d3331655f61a6cdb371921a))
+
 ## [0.4.5](https://github.com/melasistema/mela-cms/compare/v0.4.4...v0.4.5) (2026-10-14)
 
 
