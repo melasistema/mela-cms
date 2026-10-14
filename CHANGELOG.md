@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/melasistema/mela-cms/compare/v0.4.4...v0.4.5) (2026-10-14)
+
+
+### Bug Fixes
+
+* date the migration of the entity guide after the core tables ([#14](https://github.com/melasistema/mela-cms/issues/14)) ([52bbaaf](https://github.com/melasistema/mela-cms/commit/52bbaaf72d0830d9e99eae0b03df766363e4ad10))
+
 ## [0.4.4](https://github.com/melasistema/mela-cms/compare/v0.4.3...v0.4.4) (2026-10-14)
 
 
