@@ -136,12 +136,15 @@ class PageResource extends Resource
             TextColumn::make('title')
                 ->weight('medium')
                 ->description(fn (Page $record): string => $record->isHome() ? 'Home page' : '/'.$record->path())
-                // The title and the address are searched in every site language.
+                // The title and the address are searched in every site language,
+                // lowercased: MySQL compares a JSON value case-sensitively.
                 ->searchable(query: fn (Builder $query, string $search): Builder => $query->where(function (Builder $query) use ($search) {
+                    $grammar = $query->getQuery()->getGrammar();
+
                     foreach (app(Languages::class)->all() as $locale) {
-                        $query
-                            ->orWhereLike("title->{$locale}", "%{$search}%")
-                            ->orWhereLike("slug->{$locale}", "%{$search}%");
+                        foreach (["title->{$locale}", "slug->{$locale}"] as $column) {
+                            $query->orWhereRaw('lower('.$grammar->wrap($column).') like ?', ['%'.mb_strtolower($search).'%']);
+                        }
                     }
                 }))
                 ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('title->'.app(Languages::class)->default(), $direction)),
