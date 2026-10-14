@@ -19,6 +19,13 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Melasistema\MelaCms\Http\Middleware\SetAdminLocale;
 use Melasistema\MelaCms\Settings;
 
+/**
+ * The admin panel.
+ *
+ * A site that changes the panel (colours, logo, theme, plugins) extends this
+ * class, overrides panel() starting from parent::panel($panel), and sets its
+ * class as `panel_provider` in config/mela-cms.php.
+ */
 class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel

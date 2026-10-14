@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Melasistema\MelaCms\Enums\Role;
+use Melasistema\MelaCms\Filament\AdminPanelProvider;
 use Melasistema\MelaCms\Filament\Pages\ManageSettings;
 use Melasistema\MelaCms\Filament\Resources\Pages\PageResource;
 use Melasistema\MelaCms\Filament\Resources\Users\UserResource;
@@ -41,7 +42,8 @@ it('gives the keys missing from a stale config cache their defaults', function (
         ->and(config('mela-cms.media.disk'))->toBe('public')
         ->and(config('mela-cms.sitemap'))->toBe([Page::class])
         ->and(config('mela-cms.public_pages'))->toBeTrue()
-        ->and(config('mela-cms.locale_urls'))->toBe('path');
+        ->and(config('mela-cms.locale_urls'))->toBe('path')
+        ->and(config('mela-cms.panel_provider'))->toBe(AdminPanelProvider::class);
 
     // What the site set is kept.
     expect(config('mela-cms.locales'))->toBe(['en', 'it'])

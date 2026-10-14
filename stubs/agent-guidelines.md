@@ -11,6 +11,7 @@ This site is built on [MelaCMS](https://github.com/melasistema/mela-cms). This s
 
 - Laravel 13, PHP 8.4, Node 24.
 - Admin: Filament 5 at `/admin` (path set in `config/mela-cms.php`). The panel is registered by the core and discovers this site's classes in `app/Filament/Resources`, `app/Filament/Pages` and `app/Filament/Widgets`.
+- To change the panel itself (colours, logo, theme, plugins), extend `Melasistema\MelaCms\Filament\AdminPanelProvider`, override `panel()` returning `parent::panel($panel)->...`, and set the class as `panel_provider` in `config/mela-cms.php`. The core registers it: do not add it to `bootstrap/providers.php` and do not run `make:filament-panel`.
 - Public site: Blade views, Tailwind via Vite, Alpine for interactions. No Inertia. Vue is not installed; add it only when a page needs a component island.
 
 ### Languages

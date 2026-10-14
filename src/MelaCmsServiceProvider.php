@@ -16,7 +16,6 @@ use Melasistema\MelaCms\Console\RegenerateMediaCommand;
 use Melasistema\MelaCms\Console\SuperAdminCommand;
 use Melasistema\MelaCms\Console\UpdateCommand;
 use Melasistema\MelaCms\Enums\Role;
-use Melasistema\MelaCms\Filament\AdminPanelProvider;
 use Melasistema\MelaCms\Http\Controllers\PageController;
 use Melasistema\MelaCms\Http\Controllers\SitemapController;
 use Melasistema\MelaCms\Http\Middleware\SetLocale;
@@ -48,7 +47,8 @@ class MelaCmsServiceProvider extends ServiceProvider
             return $translatable;
         });
 
-        $this->app->register(AdminPanelProvider::class);
+        // The core's panel, or the site's class that extends it.
+        $this->app->register(config('mela-cms.panel_provider'));
     }
 
     public function boot(): void

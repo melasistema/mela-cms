@@ -141,6 +141,7 @@ If the email belongs to an existing user, that user keeps their password and gai
 | `locale_urls` | `'path'` | Where the other languages live: `'path'` for `example.com/it`, `'subdomain'` for `it.example.com` |
 | `admin_locale` | `null` | Language of the admin panel. `null` uses the app locale. Also a starting value |
 | `admin_path` | `admin` | URL path of the admin panel |
+| `panel_provider` | `AdminPanelProvider::class` | The class that builds the admin panel. Your own class that extends it changes the panel. See [Building a site](#building-a-site) |
 | `pages` | `['settings' => ManageSettings::class, 'languages' => ManageLanguages::class]` | The admin pages the core adds. Works like `resources` |
 | `profile_page` | `EditProfile::class` | The page where a user edits their own account. `null` removes it; your own class replaces it |
 | `resources` | `['pages' => PageResource::class, 'media' => MediaResource::class, 'users' => UserResource::class]` | The admin screens the core adds. Set an entry to `null` to remove the screen, or to your own class to replace it |
@@ -155,6 +156,28 @@ The admin panel is registered by the core. It picks up the site's own Filament c
 - `app/Filament/Resources`
 - `app/Filament/Pages`
 - `app/Filament/Widgets`
+
+To change the panel itself (colours, logo, theme, plugins), extend `Melasistema\MelaCms\Filament\AdminPanelProvider`, override `panel()` starting from what the core sets, and set your class as `panel_provider` in `config/mela-cms.php`:
+
+```php
+namespace App\Providers\Filament;
+
+use Filament\Panel;
+use Filament\Support\Colors\Color;
+use Melasistema\MelaCms\Filament\AdminPanelProvider as CoreAdminPanelProvider;
+
+class AdminPanelProvider extends CoreAdminPanelProvider
+{
+    public function panel(Panel $panel): Panel
+    {
+        return parent::panel($panel)
+            ->colors(['primary' => Color::Emerald])
+            ->brandLogo(asset('images/logo.svg'));
+    }
+}
+```
+
+The core registers that class. Do not add it to `bootstrap/providers.php`, and do not create a second panel with `make:filament-panel`.
 
 Everything specific to the site stays in the site's repository: models, migrations, Filament resources, Blade views, routes and the theme. Nothing in `vendor/melasistema/mela-cms` is ever edited.
 

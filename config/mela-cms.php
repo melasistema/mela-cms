@@ -1,5 +1,6 @@
 <?php
 
+use Melasistema\MelaCms\Filament\AdminPanelProvider;
 use Melasistema\MelaCms\Filament\Pages\EditProfile;
 use Melasistema\MelaCms\Filament\Pages\ManageLanguages;
 use Melasistema\MelaCms\Filament\Pages\ManageSettings;
@@ -60,6 +61,20 @@ return [
     */
 
     'admin_path' => 'admin',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Panel Provider
+    |--------------------------------------------------------------------------
+    |
+    | The class that builds the admin panel. To change the panel (colours,
+    | logo, theme, plugins), set your own class that extends this one and
+    | override panel(), starting from parent::panel($panel). Do not list your
+    | class in bootstrap/providers.php: the core registers it.
+    |
+    */
+
+    'panel_provider' => AdminPanelProvider::class,
 
     /*
     |--------------------------------------------------------------------------
