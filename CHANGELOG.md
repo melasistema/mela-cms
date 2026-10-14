@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/melasistema/mela-cms/compare/v0.5.0...v0.5.1) (2026-10-14)
+
+
+### Bug Fixes
+
+* skip the sizes of an image that does not fit in the memory limit ([b5147ae](https://github.com/melasistema/mela-cms/commit/b5147ae777dd55eef9c12f6a32fe3fb16e69e2e1))
+
 ## [0.5.0](https://github.com/melasistema/mela-cms/compare/v0.4.5...v0.5.0) (2026-10-14)
 
 
