@@ -5,7 +5,9 @@
 # releases.
 #
 # The package is tested inside a throwaway Laravel app provided by Orchestra
-# Testbench, so there is no .env, no database server and no asset build here.
+# Testbench, so there is no .env and no asset build here. The tests run on
+# in-memory SQLite, as a site's own tests do, and once on MySQL, as a site
+# runs on its server.
 name: CI
 
 on:
@@ -41,20 +43,63 @@ jobs:
         run: composer lint
 
   test:
-    name: Test
+    name: Test (PHP ${{ matrix.php }}, ${{ matrix.database }}, ${{ matrix.dependencies }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { php: '8.4', database: sqlite, dependencies: highest }
+          - { php: '8.5', database: sqlite, dependencies: highest }
+          # The oldest versions composer.json allows, which a site may still have.
+          - { php: '8.4', database: sqlite, dependencies: lowest }
+          # SQLite is lenient where MySQL is not: JSON values compared
+          # case-sensitively, foreign keys to a table that does not exist yet,
+          # text that is not valid UTF-8.
+          - { php: '8.4', database: mysql, dependencies: highest }
+
+    services:
+      mysql:
+        # A service cannot be switched off per matrix entry, so it starts for
+        # every job and only the MySQL one connects to it.
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
     steps:
       - uses: actions/checkout@v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: ${{ matrix.php }}
           tools: composer:v2
-          extensions: mbstring, xml, ctype, intl, pdo_sqlite, bcmath
+          extensions: mbstring, xml, ctype, intl, pdo_sqlite, pdo_mysql, bcmath
+          coverage: none
 
       - name: Install Composer dependencies
-        run: composer update --no-interaction --prefer-dist --no-progress
+        run: composer update --no-interaction --prefer-dist --no-progress ${{ matrix.dependencies == 'lowest' && '--prefer-lowest --prefer-stable' || '' }}
+
+      # The variables override the SQLite defaults of phpunit.xml.dist.
+      - name: Use MySQL
+        if: matrix.database == 'mysql'
+        run: |
+          {
+            echo "DB_CONNECTION=mysql"
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=3306"
+            echo "DB_DATABASE=testing"
+            echo "DB_USERNAME=root"
+            echo "DB_PASSWORD=password"
+          } >> "$GITHUB_ENV"
 
       - name: Tests
         run: composer test

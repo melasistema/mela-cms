@@ -15,6 +15,7 @@ use Filament\Support\SupportServiceProvider;
 use Filament\Tables\TablesServiceProvider;
 use Filament\Widgets\WidgetsServiceProvider;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Schema;
 use Kirschbaum\PowerJoins\PowerJoinsServiceProvider;
 use Livewire\LivewireServiceProvider;
 use Melasistema\MelaCms\Install\Project;
@@ -85,6 +86,16 @@ abstract class TestCase extends Orchestra
 
         $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
         $app['config']->set('auth.providers.users.model', User::class);
+    }
+
+    /**
+     * Each test starts from an empty database. An in-memory SQLite one is
+     * new for every test; a MySQL one, as in CI, keeps the tables of the
+     * test before.
+     */
+    protected function defineDatabaseMigrations(): void
+    {
+        Schema::dropAllTables();
     }
 
     protected function projectFile(string $path): string
