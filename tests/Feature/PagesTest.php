@@ -454,11 +454,13 @@ it('adds an image of the text to the media library', function () {
 
     $path = null;
 
+    // Stored the way Livewire stores an upload, with its name in the file name.
+    $upload = UploadedFile::fake()->image('Team.jpg', 600, 400);
+    $upload->storeAs('livewire-tmp', $name = TemporaryUploadedFile::generateHashNameWithOriginalNameEmbedded($upload), 'tmp-for-tests');
+
     Livewire::test(CreatePage::class)
-        ->assertFormFieldExists('body.en', function (RichText $field) use (&$path) {
-            $path = $field->saveUploadedFileAttachment(
-                TemporaryUploadedFile::createFromLivewire(basename(UploadedFile::fake()->image('Team.jpg', 600, 400)->store('livewire-tmp', 'tmp-for-tests'))),
-            );
+        ->assertFormFieldExists('body.en', function (RichText $field) use (&$path, $name) {
+            $path = $field->saveUploadedFileAttachment(TemporaryUploadedFile::createFromLivewire($name));
 
             return true;
         });
@@ -466,6 +468,7 @@ it('adds an image of the text to the media library', function () {
     $media = Media::sole();
 
     expect($media->path)->toBe($path)->toStartWith('media/')
+        ->and($media->name)->toBe('Team')
         ->and($media->width)->toBe(600)
         ->and($media->conversions)->toHaveKey('thumb');
 });
