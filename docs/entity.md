@@ -44,7 +44,9 @@ A `Service` with everything in the table above. Replace `Service`, `services` an
 
 ### 1. Migration
 
-**`database/migrations/2026_01_01_000000_create_services_table.php`**
+Create it with `php artisan make:migration create_services_table`, so its date comes after the core migrations: `cover_id` points to `mela_media`, and MySQL refuses a foreign key to a table that does not exist yet.
+
+**`database/migrations/2026_10_14_000000_create_services_table.php`**
 
 ```php
 <?php
