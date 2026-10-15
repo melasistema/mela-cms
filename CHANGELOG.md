@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/melasistema/mela-cms/compare/v0.5.1...v0.5.2) (2026-10-15)
+
+
+### Bug Fixes
+
+* qualify the publication date column in the published scope ([27b086e](https://github.com/melasistema/mela-cms/commit/27b086e1de8bd92338c2391f72ecd6067ab52e2e))
+
 ## [0.5.1](https://github.com/melasistema/mela-cms/compare/v0.5.0...v0.5.1) (2026-10-14)
 
 
