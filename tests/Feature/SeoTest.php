@@ -3,6 +3,7 @@
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -93,7 +94,7 @@ it('prints what an editor wrote for search engines, in the language of the reque
     $this->get('/it/chi-siamo')
         ->assertSee('<title>Lo studio | Studio Mela IT</title>', false)
         ->assertSee('<meta name="description" content="Who we are &amp; what we do.">', false)
-        ->assertSee('<meta property="og:locale" content="it">', false);
+        ->assertSee('<meta property="og:locale" content="it_IT">', false);
 });
 
 it('shares the cover of a page, then the share image of the site', function () {
@@ -108,6 +109,32 @@ it('shares the cover of a page, then the share image of the site', function () {
     $this->get('/about')->assertSee('og:image" content="'.$cover->url().'"', false);
     $this->get('/contact')->assertSee('og:image" content="'.$site->url().'"', false);
 });
+
+it('loads the cover once for the view and the tags', function () {
+    $cover = seoImage('cover.jpg');
+
+    seoPage(['cover_id' => $cover->id]);
+
+    DB::enableQueryLog();
+
+    // The default view shows the cover; @seo shares it.
+    $this->get('/about')->assertSee('og:image" content="'.$cover->url().'"', false);
+
+    $queries = array_filter(DB::getQueryLog(), fn (array $query) => str_contains($query['query'], 'mela_media'));
+
+    expect($queries)->toHaveCount(1);
+});
+
+it('writes the language of the page with its region for Open Graph', function (string $locale, string $expected) {
+    app(Languages::class)->use($locale);
+
+    expect((string) app(Seo::class)->render())->toContain('<meta property="og:locale" content="'.$expected.'">');
+})->with([
+    ['it', 'it_IT'],
+    ['en', 'en_US'],
+    ['pt_BR', 'pt_BR'],
+    ['sr_Latn', 'sr_RS'],
+]);
 
 it('calls the home page like the site', function () {
     $home = seoPage(['title' => ['en' => 'Home'], 'slug' => ['en' => 'home']]);

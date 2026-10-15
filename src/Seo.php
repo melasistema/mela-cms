@@ -4,6 +4,7 @@ namespace Melasistema\MelaCms;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
+use Locale;
 use Melasistema\MelaCms\Models\Media;
 
 /**
@@ -21,11 +22,31 @@ class Seo
 {
     public const string DEFAULT_TITLE_FORMAT = ':title | :site';
 
+    /**
+     * The region Open Graph pairs with a language, when it is not the
+     * language code in capitals as in it_IT or de_DE.
+     */
+    private const array REGIONS = [
+        'af' => 'ZA', 'ar' => 'AR', 'be' => 'BY', 'bn' => 'IN', 'bs' => 'BA',
+        'ca' => 'ES', 'cs' => 'CZ', 'cy' => 'GB', 'da' => 'DK', 'el' => 'GR',
+        'en' => 'US', 'et' => 'EE', 'eu' => 'ES', 'fa' => 'IR', 'ga' => 'IE',
+        'gl' => 'ES', 'he' => 'IL', 'hi' => 'IN', 'hy' => 'AM', 'ja' => 'JP',
+        'ka' => 'GE', 'kk' => 'KZ', 'ko' => 'KR', 'ms' => 'MY', 'nb' => 'NO',
+        'nn' => 'NO', 'sl' => 'SI', 'sq' => 'AL', 'sr' => 'RS', 'sv' => 'SE',
+        'sw' => 'KE', 'ta' => 'IN', 'uk' => 'UA', 'ur' => 'PK', 'vi' => 'VN',
+        'zh' => 'CN',
+    ];
+
     private ?string $title = null;
 
     private ?string $description = null;
 
     private int|string|Media|null $image = null;
+
+    /**
+     * The record given to for(), whose cover the view may load too.
+     */
+    private ?Model $model = null;
 
     private bool $noindex = false;
 
@@ -40,6 +61,8 @@ class Seo
      */
     public function for(Model $model): static
     {
+        $this->model = $model;
+
         if (method_exists($model, 'seoTitle')) {
             $this->title = $model->seoTitle();
             $this->description = $model->seoDescription();
@@ -147,7 +170,7 @@ class Seo
     public function getImage(): ?Media
     {
         foreach ([$this->image, $this->settings->get('site.share_image')] as $image) {
-            $media = $image instanceof Media ? $image : (blank($image) ? null : Media::query()->find($image));
+            $media = $image instanceof Media ? $image : (blank($image) ? null : $this->findMedia($image));
 
             if ($media?->isImage()) {
                 return $media;
@@ -205,7 +228,7 @@ class Seo
         }
 
         $tags[] = $this->meta('property', 'og:url', $canonical);
-        $tags[] = $this->meta('property', 'og:locale', $this->languages->current());
+        $tags[] = $this->meta('property', 'og:locale', $this->ogLocale($this->languages->current()));
 
         if ($image !== null) {
             // The original file: not every network reads the WebP sizes.
@@ -224,6 +247,35 @@ class Seo
         $tags[] = $this->meta('name', 'twitter:card', $image === null ? 'summary' : 'summary_large_image');
 
         return new HtmlString(implode("\n", $tags));
+    }
+
+    /**
+     * The cover of the record goes through its relation, so a view that
+     * shows it and the tags share one query.
+     */
+    private function findMedia(int|string $id): ?Media
+    {
+        if ($this->model !== null
+            && $this->model->isRelation('cover')
+            && (string) $this->model->getAttribute('cover_id') === (string) $id) {
+            $cover = $this->model->getRelationValue('cover');
+
+            return $cover instanceof Media ? $cover : null;
+        }
+
+        return Media::query()->find($id);
+    }
+
+    /**
+     * A site language as Open Graph writes it: "it_IT" for it, "pt_BR" for
+     * pt_BR. A site that wants en_GB sets the locale en_GB.
+     */
+    private function ogLocale(string $locale): string
+    {
+        $language = Locale::getPrimaryLanguage($locale);
+        $region = Locale::getRegion($locale) ?: self::REGIONS[$language] ?? strtoupper($language);
+
+        return $language.'_'.$region;
     }
 
     private function meta(string $attribute, string $name, string $content): string
