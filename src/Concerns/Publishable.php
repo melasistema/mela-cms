@@ -23,7 +23,11 @@ trait Publishable
      */
     public function scopePublished(Builder $query): void
     {
-        $query->whereNotNull('published_at')->where('published_at', '<=', now());
+        // Qualified, so the scope still works in a query joined to a table
+        // with its own `published_at`.
+        $column = $this->qualifyColumn('published_at');
+
+        $query->whereNotNull($column)->where($column, '<=', now());
     }
 
     public function isPublished(): bool

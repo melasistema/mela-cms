@@ -499,3 +499,22 @@ it('gives a site entity its address in each language', function () {
 
     expect(Post::whereSlug('novita', 'it')->exists())->toBeTrue();
 });
+
+it('keeps the published scope working in a query joined to another publishable table', function () {
+    Schema::create('posts', function (Blueprint $table) {
+        $table->id();
+        $table->json('title');
+        $table->json('slug');
+        $table->timestamp('published_at')->nullable();
+        $table->timestamps();
+    });
+
+    $published = page();
+    page(['slug' => ['en' => 'draft'], 'published_at' => null]);
+    Post::create(['title' => ['en' => 'Draft'], 'slug' => ['en' => 'draft']]);
+
+    // Both tables have `published_at`: the scope reads the one of the pages.
+    $ids = Page::published()->crossJoin('posts')->pluck('mela_pages.id')->all();
+
+    expect($ids)->toBe([$published->id]);
+});
