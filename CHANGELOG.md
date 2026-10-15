@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3](https://github.com/melasistema/mela-cms/compare/v0.5.2...v0.5.3) (2026-10-15)
+
+
+### Bug Fixes
+
+* print the full locale in og:locale and query the SEO cover image once ([f002700](https://github.com/melasistema/mela-cms/commit/f002700cbe2cab81c48d37b3fa2b89d589d1823e))
+
 ## [0.5.2](https://github.com/melasistema/mela-cms/compare/v0.5.1...v0.5.2) (2026-10-15)
 
 
