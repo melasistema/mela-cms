@@ -95,9 +95,7 @@ On the site's GitHub repository, so the workflows can install the package:
 | Dependabot secret | `COMPOSER_AUTH` | Same value |
 | Dependabot secret | `COMPOSER_TOKEN` | The token alone |
 
-`COMPOSER_AUTH` holds the whole JSON, not the token alone: with the bare token the workflows stop with "COMPOSER_AUTH environment variable is malformed".
-
-Then uncomment the two `registries` blocks in the site's `.github/dependabot.yml`.
+`COMPOSER_AUTH` holds the whole JSON, not the token alone: with the bare token the workflows stop with "COMPOSER_AUTH environment variable is malformed". The installed `.github/dependabot.yml` reads the core through `COMPOSER_TOKEN`.
 
 ### What `mela:install` does
 
