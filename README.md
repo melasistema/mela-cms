@@ -131,10 +131,24 @@ Composer symlinks `vendor/melasistema/mela-cms` to the clone, so an edit in the 
 
 ### How a change gets in
 
-1. Create a branch from `master`, named after the work: `feat/media-library`, `fix/login-redirect`.
-2. Open a pull request to `master`. Every push runs the formatting check, the tests and a check on the pull request title.
+`master` is protected, for maintainers too: it changes only through a pull request whose checks pass. There is no `development` branch.
+
+1. Fork the repository and create a branch from `master`, named after the work: `feat/media-library`, `fix/login-redirect`.
+2. Open a pull request to `master`. Every push runs the formatting check, the tests (SQLite and MySQL, PHP 8.4 and 8.5, highest and lowest dependencies) and a check on the pull request title. All of them must pass before it can be merged.
 3. Give the pull request a conventional-commit title, such as `feat: add the media library`. Pull requests are squash-merged, so the title becomes the commit on `master` and the line in the changelog. The commits inside the branch can be named freely.
-4. Add a test for new behaviour, and update the documentation when behaviour a site developer relies on changes.
+4. Keep one feature or one fix per pull request, so each gets its own line in the changelog.
+5. Add a test for new behaviour, and update the documentation when behaviour a site developer relies on changes.
+
+The title type decides what is released:
+
+| Title | Effect |
+| :--- | :--- |
+| `feat: ...` | New minor version, listed in the changelog |
+| `fix: ...` | New patch version, listed in the changelog |
+| `feat!: ...`, `fix!: ...` | Breaking change |
+| `docs:`, `test:`, `refactor:`, `ci:`, `chore:` | No release |
+
+A change to a template copied into sites (`stubs/`) is a `feat` or a `fix`, even for a workflow file: sites receive it only through a release.
 
 ### How releases are made
 
