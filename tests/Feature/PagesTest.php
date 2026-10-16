@@ -163,7 +163,7 @@ it('shows a draft to someone who may edit it', function () {
 it('serves the home page at the root of each language', function () {
     $home = page(['title' => ['en' => 'Welcome', 'it' => 'Benvenuti'], 'slug' => ['en' => 'home']]);
 
-    $this->get('/')->assertNotFound();
+    $this->get('/')->assertNotFound()->assertSee('This site has no home page yet.');
 
     app(Settings::class)->merge('site', ['home_page' => (string) $home->id]);
 
@@ -174,6 +174,39 @@ it('serves the home page at the root of each language', function () {
 
     expect($home->url('en'))->toBe('http://localhost')
         ->and($home->url('it'))->toBe('http://localhost/it');
+});
+
+it('shows a placeholder at the root until there is a home page to show', function () {
+    app(Settings::class)->merge('site', ['name' => ['en' => 'Studio Mela']]);
+
+    $this->get('/')->assertNotFound()
+        ->assertSee('Studio Mela')
+        ->assertSee('This site has no home page yet.')
+        ->assertSee('<meta name="robots" content="noindex">', false)
+        ->assertDontSee('Settings page');
+    $this->get('/it')->assertNotFound()->assertSee('This site has no home page yet.');
+
+    $draft = page(['published_at' => null]);
+    app(Settings::class)->merge('site', ['home_page' => (string) $draft->id]);
+
+    $this->get('/')->assertNotFound()->assertSee('This site has no home page yet.');
+
+    // Someone who may edit the draft sees it, to check it before publishing.
+    $this->actingAs(pageUser(Role::Editor))->get('/')->assertOk()->assertSee('About us');
+});
+
+it('links the admin from the placeholder for those who can open it', function () {
+    $this->actingAs(pageUser(null))->get('/')->assertDontSee('Settings page');
+
+    $this->actingAs(pageUser(Role::Editor))->get('/')
+        ->assertSee('Settings page')
+        ->assertSee('href="http://localhost/admin"', false);
+});
+
+it('answers the root with a plain 404 when pages are switched off', function () {
+    config(['mela-cms.resources.pages' => null]);
+
+    $this->get('/')->assertNotFound()->assertDontSee('This site has no home page yet.');
 });
 
 it('lets a route of the site win over a page', function () {

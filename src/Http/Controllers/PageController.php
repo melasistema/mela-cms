@@ -2,10 +2,13 @@
 
 namespace Melasistema\MelaCms\Http\Controllers;
 
+use Filament\Facades\Filament;
+use Filament\Models\Contracts\FilamentUser;
 use Illuminate\Http\Request;
 use Melasistema\MelaCms\Languages;
 use Melasistema\MelaCms\Models\Page;
 use Melasistema\MelaCms\Seo;
+use Melasistema\MelaCms\Settings;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -27,8 +30,13 @@ class PageController
             ? Page::home()
             : Page::query()->whereSlug($path)->first();
 
-        abort_if($page === null, 404);
-        abort_unless($page->isPublished() || $request->user()?->can('update', $page), 404);
+        $visible = $page !== null && ($page->isPublished() || $request->user()?->can('update', $page));
+
+        if (! $visible && $path === '' && config('mela-cms.resources.pages') !== null) {
+            return $this->noHome($request);
+        }
+
+        abort_unless($visible, 404);
 
         // The home page has one address only: the root.
         if ($path !== '' && $page->isHome()) {
@@ -42,5 +50,21 @@ class PageController
         $seo->for($page);
 
         return response()->view($page->view(), ['page' => $page]);
+    }
+
+    /**
+     * The root while there is no home page to show, instead of a bare 404: on
+     * a new site, the first thing anyone opens. Still answered with a 404, so
+     * nothing is indexed, and the admin is linked only for those who can open it.
+     */
+    private function noHome(Request $request): Response
+    {
+        $panel = Filament::getDefaultPanel();
+        $user = $request->user();
+
+        return response()->view('mela-cms::pages.no-home', [
+            'siteName' => app(Settings::class)->translated('site.name', config('app.name')),
+            'adminUrl' => $user instanceof FilamentUser && $user->canAccessPanel($panel) ? url($panel->getPath()) : null,
+        ], 404);
     }
 }
