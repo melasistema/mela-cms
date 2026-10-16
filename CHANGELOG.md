@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/melasistema/mela-cms/compare/v0.8.1...v0.9.0) (2026-10-16)
+
+
+### Features
+
+* brand the admin panel with the MelaCMS colours, favicon, login logo and footer ([5eb0f67](https://github.com/melasistema/mela-cms/commit/5eb0f67be4e6bb2c78d30562203b8f044021c8ff))
+
 ## [0.8.1](https://github.com/melasistema/mela-cms/compare/v0.8.0...v0.8.1) (2026-10-16)
 
 
