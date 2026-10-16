@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/melasistema/mela-cms/compare/v0.9.0...v0.9.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* install the core from Packagist without a GitHub token ([123bd74](https://github.com/melasistema/mela-cms/commit/123bd741a9f4c242a7a55b4a8398329dbc266439))
+
 ## [0.9.0](https://github.com/melasistema/mela-cms/compare/v0.8.1...v0.9.0) (2026-10-16)
 
 
