@@ -2,6 +2,8 @@
 
 namespace Melasistema\MelaCms\Install;
 
+use Closure;
+
 /**
  * Reads the changelog release-please writes into the package, to tell a site
  * what a core update brings.
@@ -23,6 +25,25 @@ final readonly class Changelog
      */
     public function between(string $from, string $to): array
     {
+        return $this->entries(fn (string $version) => version_compare($version, $from, '>') && version_compare($version, $to, '<='));
+    }
+
+    /**
+     * The entries of one version.
+     *
+     * @return list<string>
+     */
+    public function of(string $version): array
+    {
+        return $this->entries(fn (string $entry) => version_compare($entry, $version, '=='));
+    }
+
+    /**
+     * @param  Closure(string): bool  $includes  whether the entries of a version are listed
+     * @return list<string>
+     */
+    private function entries(Closure $includes): array
+    {
         if (! is_file($this->path)) {
             return [];
         }
@@ -39,8 +60,7 @@ final readonly class Changelog
                 $breaking = str_contains(strtoupper($line), 'BREAKING');
             } elseif (str_starts_with($line, '* ')
                 && $version !== null
-                && version_compare($version, $from, '>')
-                && version_compare($version, $to, '<=')) {
+                && $includes($version)) {
                 $entry = trim(preg_replace('/ \(\[[^\]]*\]\([^)]*\)\)/', '', substr($line, 2)));
                 $entries[] = $breaking ? 'Breaking: '.$entry : $entry;
             }

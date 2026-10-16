@@ -60,7 +60,18 @@ abstract class SettingsPage extends Page
                             ->keyBindings(['mod+s']),
                     ]),
                 ]),
+            ...$this->afterForm(),
         ]);
+    }
+
+    /**
+     * What the page shows below the form, outside what is saved.
+     *
+     * @return array<Component>
+     */
+    protected function afterForm(): array
+    {
+        return [];
     }
 
     protected function notifySaved(): void

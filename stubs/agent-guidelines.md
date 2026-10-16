@@ -27,6 +27,7 @@ This site is built on [MelaCMS](https://github.com/melasistema/mela-cms). This s
 ### Settings
 
 - Site name, description, contact details and social profiles are filled in by an admin on the core's Settings page (`/admin/settings`); do not hard-code them in views or add a settings table. Read them with `app(\Melasistema\MelaCms\Settings::class)->get('site.contact.email')`, and the per-language ones with `->translated('site.name', config('app.name'))`. Keys: `site.name`, `site.description` (translated), `site.home_page` (a page id), `site.share_image` (a media id), `site.seo.title_format`, `site.seo.noindex`, `site.contact.{email,phone,address}`, `site.social.{facebook,instagram,linkedin,x,youtube,tiktok}`.
+- The Settings page also shows the installed MelaCMS version and what it brought, and on a local site looks for a newer one. The update itself is `php artisan mela:update`, in the terminal.
 - For a setting specific to this site, extend `Melasistema\MelaCms\Filament\Pages\ManageSettings`, add fields to `formComponents()` (a field named `booking.url` is read as `site.booking.url`), and name the class under `pages.settings` in `config/mela-cms.php`. Do not create it in `app/Filament/Pages` without that config entry, or the panel shows two settings pages.
 
 ### Media

@@ -50,3 +50,8 @@ it('reads the changelog shipped with the core', function () {
 it('lists nothing without a changelog', function () {
     expect((new Changelog($this->projectFile('missing.md')))->between('0.1.0', '9.0.0'))->toBe([]);
 });
+
+it('lists the entries of one version', function () {
+    expect((new Changelog)->of('0.5.2'))->toBe(['qualify the publication date column in the published scope'])
+        ->and((new Changelog)->of('9.0.0'))->toBe([]);
+});

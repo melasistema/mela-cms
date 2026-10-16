@@ -1,7 +1,9 @@
 <?php
 
+use Filament\Actions\Testing\TestAction;
 use Filament\Facades\Filament;
 use Filament\Panel;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
@@ -193,4 +195,78 @@ it('lets a site remove or replace the settings page', function () {
     expect((new AdminPanelProvider(app()))->panel(Panel::make())->getPages())
         ->toContain(SiteSettingsPage::class)
         ->not->toContain(ManageSettings::class);
+});
+
+function checkCore(): TestAction
+{
+    return TestAction::make('checkCore')->schemaComponent('core', 'content');
+}
+
+function settingsCore(string $version): void
+{
+    $path = test()->projectFile('vendor/composer/installed.json');
+
+    @mkdir(dirname($path), 0777, true);
+    file_put_contents($path, json_encode(['packages' => [['name' => 'melasistema/mela-cms', 'version' => $version]]]));
+}
+
+it('shows the MelaCMS version and what it brought', function () {
+    settingsCore('v0.5.2');
+    $this->actingAs(settingsUser(Role::Admin));
+
+    Livewire::test(ManageSettings::class)
+        ->assertSee('Version 0.5.2')
+        ->assertSee("What's new in 0.5.2")
+        ->assertSee('qualify the publication date column in the published scope')
+        ->assertDontSee('Check for a new version');
+});
+
+it('tells a development copy of the core apart', function () {
+    $this->actingAs(settingsUser(Role::Admin));
+
+    Livewire::test(ManageSettings::class)
+        ->assertSee('A development copy of the core, not a release.')
+        ->assertDontSee("What's new")
+        ->assertDontSee('Check for a new version');
+});
+
+it('looks for a newer core on a local site', function () {
+    settingsCore('v0.5.2');
+    app()['env'] = 'local';
+    Process::fake(['*show*' => Process::result(json_encode(['latest' => 'v0.9.0']))]);
+    $this->actingAs(settingsUser(Role::Admin));
+
+    Livewire::test(ManageSettings::class)
+        ->assertSee('Check for a new version')
+        ->assertDontSee('is available')
+        ->callAction(checkCore())
+        ->assertSet('newerCore', '0.9.0')
+        ->assertSee('MelaCMS 0.9.0 is available')
+        ->assertSee('php artisan mela:update');
+
+    Process::assertRan(fn ($process) => in_array('show', $process->command, true));
+});
+
+it('says when the core is the newest version', function () {
+    settingsCore('v0.5.2');
+    app()['env'] = 'local';
+    Process::fake(['*show*' => Process::result(json_encode(['latest' => 'v0.5.2']))]);
+    $this->actingAs(settingsUser(Role::Admin));
+
+    Livewire::test(ManageSettings::class)
+        ->callAction(checkCore())
+        ->assertNotified('MelaCMS 0.5.2 is the newest version')
+        ->assertDontSee('is available');
+});
+
+it('reports when Composer cannot look for a newer core', function () {
+    settingsCore('v0.5.2');
+    app()['env'] = 'local';
+    Process::fake(['*show*' => Process::result(errorOutput: 'Could not authenticate against github.com', exitCode: 1)]);
+    $this->actingAs(settingsUser(Role::Admin));
+
+    Livewire::test(ManageSettings::class)
+        ->callAction(checkCore())
+        ->assertNotified('Could not look for a new version')
+        ->assertDontSee('is available');
 });

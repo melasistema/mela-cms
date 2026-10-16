@@ -37,7 +37,7 @@ MelaCMS takes the other route:
 | Localized URLs: default language at the root, the others at `/it/...` or `it.example.com` | Available |
 | Language switcher data and `hreflang` tags | Available |
 | Translatable content: JSON columns, one form with a tab per language | Available |
-| Settings page: site name, description and share image, contact details, social profiles | Available |
+| Settings page: site name, description and share image, contact details, social profiles, the MelaCMS version and what's new | Available |
 | Media library: upload, image sizes, a form field to pick a file | Available |
 | Pages: title, address and text per language, templates, cover image, publication date, served by the core | Available |
 | Building blocks for a site's own entities: translated slugs, publication date, rich text | Available |
@@ -385,6 +385,8 @@ array_filter($settings->get('site.social', []));         // ['instagram' => 'htt
 `translated()` is for a value that has one entry per language. An empty translation falls back to the default language of the site, then to the default given.
 
 The site name is also the name shown in the admin panel. Until one is saved, the panel shows `APP_NAME`.
+
+Below the form, the page shows the MelaCMS version of the site and what that version brought, read from the core's changelog. On a local site (`APP_ENV=local`) a **Check for a new version** button asks Composer for the newest release. When there is one, the page shows it with the command that installs it, `php artisan mela:update` (see [Updating the core](#updating-the-core)). The update itself always runs in the terminal, never from the panel.
 
 To add settings of your own, extend the page, add fields, and name your class under `pages` in the config. Every field is saved under `site` at its own name:
 
@@ -774,6 +776,8 @@ One command does the whole update:
 3. It lists what's new since your version, read from the core's changelog, and prints the commit message, for example `fix: update MelaCMS to 0.5.4`.
 
 Commit `composer.json`, `composer.lock`, the two agent guides and `mela-cms.json` with that message, then release the site as usual. It must be a `fix:`: a `chore:` would not make a release, so nothing would be deployed.
+
+To see whether a new version is out without changing anything, use **Check for a new version** on the Settings page of the local site.
 
 When you already have the newest version, the command applies it again, which is harmless. `--installed` skips Composer and applies the core already in `vendor/`, for example without a network connection. Composer is also skipped when the core is not installed from a release (a path repository in development).
 
