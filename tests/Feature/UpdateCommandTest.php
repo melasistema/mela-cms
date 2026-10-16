@@ -4,28 +4,121 @@ use Illuminate\Process\PendingProcess;
 use Illuminate\Support\Facades\Process;
 use Melasistema\MelaCms\Enums\Role;
 use Melasistema\MelaCms\Install\Project;
+use Melasistema\MelaCms\Install\StubPublisher;
 use Spatie\Permission\Models\Role as RoleModel;
+use Symfony\Component\Process\Process as SymfonyProcess;
 
 it('reports when everything matches the core', function () {
     $this->install();
 
     $this->artisan('mela:update')
-        ->expectsOutputToContain('All project templates match the core')
+        ->expectsOutputToContain('MelaCMS is up to date.')
         ->assertSuccessful();
 });
 
-it('reports project files that differ, without touching them', function () {
+it('leaves alone a file the site changed after taking its template', function () {
     $this->install();
     file_put_contents($this->projectFile('.github/workflows/ci.yml'), 'mine');
-    unlink($this->projectFile('.github/dependabot.yml'));
 
     $this->artisan('mela:update')
-        ->expectsOutputToContain('.github/workflows/ci.yml')
-        ->expectsOutputToContain('.github/dependabot.yml')
+        ->expectsOutputToContain('your version, kept')
+        ->expectsOutputToContain('MelaCMS is up to date.')
+        ->assertSuccessful();
+
+    expect(file_get_contents($this->projectFile('.github/workflows/ci.yml')))->toBe('mine');
+});
+
+/**
+ * Pretend the site took or kept an earlier version of the template, which
+ * the core has changed since. The file is that version, the site's own or none.
+ */
+function olderTemplate(string $destination, ?string $file = 'old template', bool $recorded = true): void
+{
+    $path = test()->projectFile(StubPublisher::RECORD);
+    $record = json_decode(file_get_contents($path), true);
+    $record['templates'][$destination] = hash('sha256', 'old template');
+
+    if (! $recorded) {
+        unset($record['templates'][$destination]);
+    }
+
+    file_put_contents($path, json_encode($record));
+    $file === null ? unlink(test()->projectFile($destination)) : file_put_contents(test()->projectFile($destination), $file);
+}
+
+function recordedTemplate(string $destination): ?string
+{
+    return json_decode(file_get_contents(test()->projectFile(StubPublisher::RECORD)), true)['templates'][$destination] ?? null;
+}
+
+$choices = ['Take the core template', 'Keep mine', 'Show the differences'];
+
+it('offers the new template of a file the site never changed', function () use ($choices) {
+    $this->install();
+    olderTemplate('.github/dependabot.yml');
+
+    $this->artisan('mela:update')
+        ->expectsChoice('The core template of .github/dependabot.yml changed. You have not changed the file.', 'Take the core template', $choices)
+        ->expectsOutputToContain('replaced')
+        ->assertSuccessful();
+
+    expect(file_get_contents($this->projectFile('.github/dependabot.yml')))
+        ->toBe(file_get_contents(__DIR__.'/../../stubs/dependabot.yml'))
+        ->and(recordedTemplate('.github/dependabot.yml'))->toBe(hash_file('sha256', __DIR__.'/../../stubs/dependabot.yml'));
+});
+
+it('keeps the file when asked, and does not ask again for the same template', function () use ($choices) {
+    $this->install();
+    olderTemplate('.github/dependabot.yml', 'mine');
+    $question = 'The core template of .github/dependabot.yml changed since you took or kept it, or this is the first check of the file.';
+    Process::fake(['*diff*' => Process::result(output: "-mine\n+fake line\n", exitCode: 1)]);
+
+    $this->artisan('mela:update')
+        ->expectsChoice($question, 'Show the differences', $choices)
+        ->expectsOutputToContain('+fake line')
+        ->expectsChoice($question, 'Keep mine', $choices)
+        ->assertSuccessful();
+
+    Process::assertRan(fn (PendingProcess $process) => array_slice($process->command, 0, 3) === ['git', 'diff', '--no-index']
+        && in_array(realpath(__DIR__.'/../../stubs/dependabot.yml'), $process->command, true));
+
+    $this->artisan('mela:update')
+        ->expectsOutputToContain('your version, kept')
+        ->assertSuccessful();
+
+    expect(file_get_contents($this->projectFile('.github/dependabot.yml')))->toBe('mine');
+});
+
+it('asks before adding a file the site does not have', function () {
+    $this->install();
+    olderTemplate('.github/dependabot.yml', file: null, recorded: false);
+
+    $this->artisan('mela:update')
+        ->expectsChoice('.github/dependabot.yml is not in the project. Add the core template?', 'Leave it out', ['Add it', 'Leave it out'])
+        ->assertSuccessful();
+
+    $this->artisan('mela:update')
+        ->expectsOutputToContain('your version, kept')
+        ->assertSuccessful();
+
+    expect($this->projectFile('.github/dependabot.yml'))->not->toBeFile();
+});
+
+it('only reports the changed templates without interaction, and changes no file', function () {
+    $this->install();
+    olderTemplate('.github/workflows/ci.yml', 'mine');
+    olderTemplate('.github/dependabot.yml', file: null, recorded: false);
+    $record = file_get_contents($this->projectFile(StubPublisher::RECORD));
+
+    $this->artisan('mela:update', ['--no-interaction' => true])
+        ->expectsOutputToContain('differs, waiting for your choice')
+        ->expectsOutputToContain('missing, waiting for your choice')
+        ->expectsOutputToContain('php artisan mela:update --installed')
         ->assertSuccessful();
 
     expect(file_get_contents($this->projectFile('.github/workflows/ci.yml')))->toBe('mine')
-        ->and($this->projectFile('.github/dependabot.yml'))->not->toBeFile();
+        ->and($this->projectFile('.github/dependabot.yml'))->not->toBeFile()
+        ->and(file_get_contents($this->projectFile(StubPublisher::RECORD)))->toBe($record);
 });
 
 it('restores a core role that is missing', function () {
@@ -141,7 +234,8 @@ it('updates the core to the newest release and applies it with the new code', fu
         && in_array('--with-all-dependencies', $process->command, true));
     Process::assertRan(fn (PendingProcess $process) => in_array('mela:update', $process->command, true)
         && in_array('--installed', $process->command, true)
-        && $process->path === app(Project::class)->path());
+        && $process->path === app(Project::class)->path()
+        && $process->tty === SymfonyProcess::isTtySupported());
 
     // The steps are left to the new core: this process has the old classes.
     expect(file_get_contents($this->projectFile('AGENTS.md')))->toBe($guide);
@@ -190,7 +284,7 @@ it('applies the installed core when it is the newest release', function () {
 
     $this->artisan('mela:update')
         ->expectsOutputToContain('MelaCMS 0.5.3 is the newest version')
-        ->expectsOutputToContain('All project templates match the core')
+        ->expectsOutputToContain('MelaCMS is up to date.')
         ->assertSuccessful();
 
     Process::assertDidntRun(fn (PendingProcess $process) => in_array('require', $process->command, true));
@@ -204,7 +298,7 @@ it('applies the installed core when Composer cannot look for a new release', fun
 
     $this->artisan('mela:update')
         ->expectsOutputToContain('Could not authenticate against github.com')
-        ->expectsOutputToContain('All project templates match the core')
+        ->expectsOutputToContain('MelaCMS is up to date.')
         ->assertSuccessful();
 });
 
@@ -246,7 +340,7 @@ it('leaves Composer alone', function (Closure $setUp, array $options) {
 
     $this->artisan('mela:update', $options)
         ->when(app()->isProduction(), fn ($command) => $command->expectsConfirmation('Are you sure you want to run this command?', 'yes'))
-        ->expectsOutputToContain('All project templates match the core')
+        ->expectsOutputToContain('MelaCMS is up to date.')
         ->assertSuccessful();
 
     Process::assertNothingRan();

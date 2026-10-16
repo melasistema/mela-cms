@@ -6,6 +6,7 @@ This site is built on [MelaCMS](https://github.com/melasistema/mela-cms). This s
 
 - **MelaCMS core** lives in `vendor/melasistema/mela-cms`. Never edit it. It provides the admin panel, roles (`super-admin`, `admin`, `editor`), the `mela:install`, `mela:update` and `mela:super-admin` commands, and core migrations.
 - **This repo** holds everything specific to the site: models, migrations, Filament resources, Blade views, routes, the theme.
+- `mela-cms.json` records which version of each core template (the files in `.github/`) the site took or kept. `mela:install` and `mela:update` write it; commit it and do not edit it by hand.
 
 ### Stack
 
@@ -74,7 +75,7 @@ An entity is content of this site that is not a page: a service, a post, a proje
 | Tests | `php artisan test` |
 | Format PHP | `vendor/bin/pint` |
 | Check formatting (what CI runs) | `vendor/bin/pint --test` |
-| Update the CMS core (Composer included) | `php artisan mela:update` |
+| Update the CMS core (Composer included; asks about workflow templates the core changed, so run it in a terminal) | `php artisan mela:update` |
 
 ### Git, releases and deploys
 

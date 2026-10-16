@@ -63,6 +63,18 @@ it('copies the templates into the project', function () {
     }
 });
 
+it('records the templates it copies', function () {
+    $this->install();
+
+    $record = json_decode(file_get_contents($this->projectFile(StubPublisher::RECORD)), true)['templates'];
+
+    expect(array_keys($record))->toEqualCanonicalizing(array_values(StubPublisher::FILES));
+
+    foreach (StubPublisher::FILES as $stub => $destination) {
+        expect($record[$destination])->toBe(hash_file('sha256', __DIR__.'/../../stubs/'.$stub));
+    }
+});
+
 it('ships a deploy that removes the caches of the previous release before it runs artisan', function () {
     $this->install();
 

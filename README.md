@@ -107,7 +107,7 @@ Then uncomment the two `registries` blocks in the site's `.github/dependabot.yml
 4. Creates the roles and the super-admin account.
 5. Publishes Filament's assets and adds `@php artisan filament:upgrade` to the `post-autoload-dump` scripts in `composer.json`, so the assets follow every Composer install.
 6. Links `public/storage` to `storage/app/public`, where the media library keeps its files.
-7. Copies the workflow templates into `.github/`.
+7. Copies the workflow templates into `.github/` and records their version in `mela-cms.json`.
 8. Adds the MelaCMS section to `AGENTS.md` and `CLAUDE.md`.
 
 The command is safe to run again. Each step skips what is already in place, and a workflow file you have changed is kept unless you confirm replacing it.
@@ -770,14 +770,20 @@ php artisan mela:update
 One command does the whole update:
 
 1. It asks Composer for the newest MelaCMS release and requires it, raising the constraint when needed. While the core is below `1.0`, `^0.5` does not allow `0.6.0`, so a plain `composer update` would stay behind.
-2. It applies the new version in a fresh process, with the new core's own code: new migrations, any missing core role, the `public/storage` link and the MelaCMS section of `AGENTS.md` and `CLAUDE.md`.
+2. It applies the new version in a fresh process, with the new core's own code: new migrations, any missing core role, the `public/storage` link, the MelaCMS section of `AGENTS.md` and `CLAUDE.md`, and a question for each workflow file whose core template changed (see below).
 3. It lists what's new since your version, read from the core's changelog, and prints the commit message, for example `fix: update MelaCMS to 0.5.4`.
 
-Commit `composer.json`, `composer.lock` and the two agent guides with that message, then release the site as usual. It must be a `fix:`: a `chore:` would not make a release, so nothing would be deployed.
+Commit `composer.json`, `composer.lock`, the two agent guides and `mela-cms.json` with that message, then release the site as usual. It must be a `fix:`: a `chore:` would not make a release, so nothing would be deployed.
 
 When you already have the newest version, the command applies it again, which is harmless. `--installed` skips Composer and applies the core already in `vendor/`, for example without a network connection. Composer is also skipped when the core is not installed from a release (a path repository in development).
 
-`mela:update` never overwrites a file the site owns. It lists the workflow files that differ from the core templates and leaves the decision to you. To take the new version of one, copy it from `vendor/melasistema/mela-cms/stubs/`, or run `mela:install` again to review them one by one.
+`mela:update` never overwrites a file the site owns without asking. `mela-cms.json`, at the root of the site, records for each workflow file the version of the core template you took or kept. A file you changed after taking its template is left alone. When a new core version changes a template, the command asks about that file once:
+
+- **Take the core template**: the file is replaced. This is the suggested answer when you never changed the file.
+- **Keep mine**: the file stays as it is, and the command does not ask again until the core changes that template once more.
+- **Show the differences**: prints a `git diff` from your file to the new template, then asks again.
+
+A file you deleted is offered the same way: add it, or leave it out. Without a terminal (`--no-interaction`, CI) the command only lists the files waiting for a choice; `php artisan mela:update --installed` asks about them later. On a site that has no `mela-cms.json` yet, the first run asks about every file that differs from its template, and remembers the answers.
 
 Never update on the server. The deploy builds `vendor/` from the committed `composer.lock`, so the next deploy would put the old core back, and the new one would have gone live without passing CI. On a production environment `mela:update` does not look for a new version.
 
@@ -791,7 +797,7 @@ Dependabot needs the PHP version pin from [Installation](#installation) and, whi
 
 ## Releasing and deploying a site
 
-The installer copies four files into the site. From then on they belong to the site and can be changed freely.
+The installer copies four files into the site. From then on they belong to the site and can be changed freely: `mela:update` asks before taking a new version of one (see [Updating the core](#updating-the-core)).
 
 | File | Runs on | Does |
 | :--- | :--- | :--- |

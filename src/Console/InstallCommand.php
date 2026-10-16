@@ -8,19 +8,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Process;
 use Melasistema\MelaCms\Concerns\HasCmsAccess;
+use Melasistema\MelaCms\Console\Concerns\ReviewsTemplates;
 use Melasistema\MelaCms\Install\AgentGuide;
 use Melasistema\MelaCms\Install\ComposerScripts;
 use Melasistema\MelaCms\Install\Project;
 use Melasistema\MelaCms\Install\Roles;
 use Melasistema\MelaCms\Install\StorageLink;
 use Melasistema\MelaCms\Install\StubPublisher;
-use Melasistema\MelaCms\Install\StubStatus;
 use Melasistema\MelaCms\Install\UserModelPatcher;
 use ReflectionClass;
 use Spatie\Permission\PermissionServiceProvider;
 
 class InstallCommand extends Command
 {
+    use ReviewsTemplates;
+
     protected $signature = 'mela:install
         {--name= : Name of the super-admin}
         {--email= : Email of the super-admin}
@@ -72,7 +74,7 @@ class InstallCommand extends Command
             $this->components->warn('Could not link public/storage. Run `php artisan storage:link`, or uploaded files will not show.');
         }
 
-        $this->publishStubs($stubs);
+        $this->reviewTemplates($stubs, createMissing: true);
 
         foreach ($agentGuide->sync() as $file => $result) {
             $this->components->twoColumnDetail($file, "MelaCMS section {$result}");
@@ -208,36 +210,6 @@ class InstallCommand extends Command
             '--email' => $this->option('email'),
             '--password' => $this->option('password'),
         ], fn (?string $value) => $value !== null)) === self::SUCCESS;
-    }
-
-    private function publishStubs(StubPublisher $stubs): void
-    {
-        foreach ($stubs->statuses() as $destination => $status) {
-            if ($status === StubStatus::Current) {
-                $this->components->twoColumnDetail($destination, 'up to date');
-
-                continue;
-            }
-
-            if ($status === StubStatus::Differs && ! $this->shouldReplace($destination)) {
-                $this->components->twoColumnDetail($destination, 'kept (differs from the core template)');
-
-                continue;
-            }
-
-            $stubs->publish($destination);
-            $this->components->twoColumnDetail($destination, $status === StubStatus::Missing ? 'created' : 'replaced');
-        }
-    }
-
-    private function shouldReplace(string $destination): bool
-    {
-        if ($this->option('force')) {
-            return true;
-        }
-
-        return $this->input->isInteractive()
-            && $this->confirm("{$destination} differs from the core template. Replace it?", false);
     }
 
     /**

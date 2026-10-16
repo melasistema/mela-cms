@@ -5,6 +5,7 @@ namespace Melasistema\MelaCms\Console;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Process\ProcessResult;
 use Illuminate\Support\Facades\Process;
+use Melasistema\MelaCms\Console\Concerns\ReviewsTemplates;
 use Melasistema\MelaCms\Install\AgentGuide;
 use Melasistema\MelaCms\Install\Changelog;
 use Melasistema\MelaCms\Install\ComposerScripts;
@@ -13,23 +14,26 @@ use Melasistema\MelaCms\Install\Project;
 use Melasistema\MelaCms\Install\Roles;
 use Melasistema\MelaCms\Install\StorageLink;
 use Melasistema\MelaCms\Install\StubPublisher;
-use Melasistema\MelaCms\Install\StubStatus;
 use RuntimeException;
+use Symfony\Component\Process\Process as SymfonyProcess;
 
 use function Illuminate\Support\php_binary;
 
 class UpdateCommand extends Command
 {
+    use ReviewsTemplates;
+
     protected $signature = 'mela:update
         {--installed : Apply the core already in vendor/, without looking for a newer version}
         {--check : Change nothing, and fail when the agent guides are behind the installed core}';
 
-    protected $description = 'Update the MelaCMS core to its newest version and apply it: Composer, migrations, roles, agent guides and a template report';
+    protected $description = 'Update the MelaCMS core to its newest version and apply it: Composer, migrations, roles, agent guides and the templates the core changed';
 
     /**
-     * Never changes a file the project owns: besides composer.json and
-     * composer.lock it rewrites only the MelaCMS section of the agent guides,
-     * and reports the templates that no longer match the installed core.
+     * Never changes a file the project owns without asking: besides
+     * composer.json and composer.lock it rewrites only the MelaCMS section of
+     * the agent guides and the template record, and asks about a project file
+     * only when the core changed its template.
      */
     public function handle(Project $project, CoreVersion $core, Changelog $changelog): int
     {
@@ -91,11 +95,14 @@ class UpdateCommand extends Command
         }
 
         // This process still runs the classes of the previous core: the new
-        // one is applied by its own code, in a fresh process.
-        $applied = Process::path($project->path())->forever()->run(
-            array_filter([php_binary(), 'artisan', 'mela:update', '--installed', $this->output->isDecorated() ? '--ansi' : null]),
-            fn (string $type, string $output) => $this->output->write($output),
-        );
+        // one is applied by its own code, in a fresh process. It gets the
+        // terminal, to ask about the templates the core changed.
+        $applied = Process::path($project->path())->forever()
+            ->tty($this->input->isInteractive() && SymfonyProcess::isTtySupported())
+            ->run(
+                array_filter([php_binary(), 'artisan', 'mela:update', '--installed', $this->output->isDecorated() ? '--ansi' : null]),
+                fn (string $type, string $output) => $this->output->write($output),
+            );
 
         if ($applied->failed()) {
             $this->components->error("MelaCMS {$to} is installed, but applying it failed. Fix the error above and run `php artisan mela:update` again.");
@@ -123,23 +130,18 @@ class UpdateCommand extends Command
         $agentGuide->sync();
         $storageLink->ensure();
 
-        $outdated = array_filter($stubs->statuses(), fn (StubStatus $status) => $status !== StubStatus::Current);
+        $waiting = $this->reviewTemplates($stubs);
 
-        if ($outdated === []) {
-            $this->components->info('MelaCMS is up to date. All project templates match the core.');
+        if ($waiting === []) {
+            $this->components->info('MelaCMS is up to date.');
 
             return self::SUCCESS;
         }
 
-        $this->components->info('MelaCMS is up to date. These project files do not match the core templates:');
-
-        foreach ($outdated as $destination => $status) {
-            $this->components->twoColumnDetail($destination, $status === StubStatus::Missing ? 'missing' : 'differs');
-        }
-
+        $this->components->info('MelaCMS is up to date. The files waiting for your choice are left as they are.');
         $this->components->bulletList([
-            'A file that differs is either your own change or a template updated in the core.',
-            'Run `php artisan mela:install` to review them one by one, or compare with vendor/melasistema/mela-cms/stubs.',
+            'Run `php artisan mela:update --installed` in a terminal to take the new template or keep your file, one by one.',
+            'Your choice is recorded in '.StubPublisher::RECORD.', so a file is raised again only when the core changes its template.',
         ]);
 
         return self::SUCCESS;
