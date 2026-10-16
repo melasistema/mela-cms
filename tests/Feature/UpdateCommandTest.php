@@ -157,6 +157,31 @@ it('raises the constraint for a new minor version below 1.0', function () {
     Process::assertRan(fn (PendingProcess $process) => in_array('melasistema/mela-cms:^0.6', $process->command, true));
 });
 
+it('runs Composer on the PHP that runs artisan', function (string $script, bool $throughPhp) {
+    $this->install();
+    installedCore('v0.5.3');
+    fakeComposer('v0.6.0');
+    $bin = $this->projectFile('bin');
+    @mkdir($bin);
+    file_put_contents("{$bin}/composer", $script);
+    chmod("{$bin}/composer", 0755);
+    $path = getenv('PATH');
+    putenv("PATH={$bin}".PATH_SEPARATOR.$path);
+
+    try {
+        $this->artisan('mela:update')->assertSuccessful();
+    } finally {
+        putenv("PATH={$path}");
+    }
+
+    Process::assertRan(fn (PendingProcess $process) => in_array('require', $process->command, true)
+        && array_slice($process->command, 0, 2) === ($throughPhp ? [PHP_BINARY, realpath("{$bin}/composer")] : ['composer', 'require']));
+})->with([
+    // A shared host's `php` can be older than the `php84` the site needs.
+    'a PHP script' => ["#!/usr/bin/env php\n<?php\n", true],
+    'a shell wrapper' => ["#!/bin/sh\nexec php84 /opt/composer.phar \"\$@\"\n", false],
+]);
+
 it('applies the installed core when it is the newest release', function () {
     $this->install();
     installedCore('v0.5.3');

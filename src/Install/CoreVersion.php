@@ -7,6 +7,7 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Composer;
 use Illuminate\Support\Facades\Process;
 use RuntimeException;
+use Symfony\Component\Process\ExecutableFinder;
 
 /**
  * The MelaCMS version a site has, the newest one released, and the Composer
@@ -72,11 +73,31 @@ final readonly class CoreVersion
      */
     private function composer(array $arguments): ProcessResult
     {
-        $composer = (new Composer($this->files, $this->project->path()))->findComposer();
+        $composer = (new Composer($this->files, $this->project->path()))->findComposer($this->composerScript());
 
         return Process::path($this->project->path())
             ->forever()
             ->run([...$composer, ...$arguments, '--no-interaction', '--no-ansi']);
+    }
+
+    /**
+     * The `composer` on the PATH when it is a PHP script, so it runs on the PHP
+     * that runs artisan. Its own `#!/usr/bin/env php` can find an older PHP
+     * (shared hosts keep one as `php` and offer `php84` beside it), and the
+     * scripts Composer runs after an install would then fail its platform check.
+     */
+    private function composerScript(): ?string
+    {
+        $path = (new ExecutableFinder)->find('composer');
+
+        if ($path === null || ($handle = @fopen($path, 'r')) === false) {
+            return null;
+        }
+
+        $start = (string) fgets($handle);
+        fclose($handle);
+
+        return preg_match('/^(#!.*\bphp\b|<\?php)/', $start) === 1 ? (realpath($path) ?: $path) : null;
     }
 
     private function release(string $version): ?string
