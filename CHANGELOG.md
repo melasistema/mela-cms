@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/melasistema/mela-cms/compare/v0.6.0...v0.7.0) (2026-10-16)
+
+
+### Features
+
+* ask about a template only when the core changed it ([164ecf3](https://github.com/melasistema/mela-cms/commit/164ecf3e22a06f1afb8451d1cacbe0155229045d))
+
+
+### Bug Fixes
+
+* run Composer on the PHP that runs artisan in mela:update ([c975485](https://github.com/melasistema/mela-cms/commit/c9754851409caa6d93898d325872c10d2e853245))
+
 ## [0.6.0](https://github.com/melasistema/mela-cms/compare/v0.5.3...v0.6.0) (2026-10-16)
 
 
