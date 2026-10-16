@@ -16,6 +16,7 @@ use Melasistema\MelaCms\Install\Roles;
 use Melasistema\MelaCms\Install\StorageLink;
 use Melasistema\MelaCms\Install\StubPublisher;
 use Melasistema\MelaCms\Install\UserModelPatcher;
+use Melasistema\MelaCms\Install\WelcomeRoute;
 use ReflectionClass;
 use Spatie\Permission\PermissionServiceProvider;
 
@@ -49,6 +50,7 @@ class InstallCommand extends Command
         StubPublisher $stubs,
         AgentGuide $agentGuide,
         StorageLink $storageLink,
+        WelcomeRoute $welcomeRoute,
     ): int {
         if (! $this->writeConfig()) {
             return self::FAILURE;
@@ -73,6 +75,12 @@ class InstallCommand extends Command
         if (! $storageLink->ensure()) {
             $this->components->warn('Could not link public/storage. Run `php artisan storage:link`, or uploaded files will not show.');
         }
+
+        match ($welcomeRoute->remove()) {
+            WelcomeRoute::REMOVED => $this->components->twoColumnDetail('routes/web.php', 'Welcome route removed, / shows the home page'),
+            WelcomeRoute::KEPT => $this->components->twoColumnDetail('routes/web.php', 'Own route for / kept, it is shown instead of the home page'),
+            default => null,
+        };
 
         $this->reviewTemplates($stubs, createMissing: true);
 
