@@ -3,31 +3,120 @@
 namespace Melasistema\MelaCms\Console;
 
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Process\ProcessResult;
+use Illuminate\Support\Facades\Process;
 use Melasistema\MelaCms\Install\AgentGuide;
+use Melasistema\MelaCms\Install\Changelog;
 use Melasistema\MelaCms\Install\ComposerScripts;
+use Melasistema\MelaCms\Install\CoreVersion;
+use Melasistema\MelaCms\Install\Project;
 use Melasistema\MelaCms\Install\Roles;
 use Melasistema\MelaCms\Install\StorageLink;
 use Melasistema\MelaCms\Install\StubPublisher;
 use Melasistema\MelaCms\Install\StubStatus;
+use RuntimeException;
+
+use function Illuminate\Support\php_binary;
 
 class UpdateCommand extends Command
 {
     protected $signature = 'mela:update
+        {--installed : Apply the core already in vendor/, without looking for a newer version}
         {--check : Change nothing, and fail when the agent guides are behind the installed core}';
 
-    protected $description = 'Apply a new MelaCMS core version after `composer update`: migrations, roles, agent guide and a template report';
+    protected $description = 'Update the MelaCMS core to its newest version and apply it: Composer, migrations, roles, agent guides and a template report';
 
     /**
-     * Never changes a file the project owns: it rewrites only the MelaCMS
-     * section of the agent guides and reports the templates that no longer
-     * match the installed core.
+     * Never changes a file the project owns: besides composer.json and
+     * composer.lock it rewrites only the MelaCMS section of the agent guides,
+     * and reports the templates that no longer match the installed core.
      */
-    public function handle(Roles $roles, ComposerScripts $composerScripts, StubPublisher $stubs, AgentGuide $agentGuide, StorageLink $storageLink): int
+    public function handle(Project $project, CoreVersion $core, Changelog $changelog): int
     {
         if ($this->option('check')) {
-            return $this->check($agentGuide);
+            return $this->laravel->call($this->check(...));
         }
 
+        // On a server the core arrives with a deploy, built from composer.lock.
+        if ($this->option('installed') || $this->laravel->isProduction()) {
+            return $this->laravel->call($this->apply(...));
+        }
+
+        return $this->updateCore($project, $core, $changelog) ?? $this->laravel->call($this->apply(...));
+    }
+
+    /**
+     * Move the site to the newest release. Returns null when there is nothing
+     * to move, so the installed core is applied in this process.
+     */
+    private function updateCore(Project $project, CoreVersion $core, Changelog $changelog): ?int
+    {
+        $from = $core->installed();
+
+        if ($from === null) {
+            $this->components->info('The installed MelaCMS core is not a release, so Composer is left alone.');
+
+            return null;
+        }
+
+        try {
+            $latest = $core->latest();
+        } catch (RuntimeException $exception) {
+            $this->components->warn("Could not look for a new MelaCMS version, so the installed {$from} is applied. Composer said: {$exception->getMessage()}");
+
+            return null;
+        }
+
+        if ($latest === null || version_compare($latest, $from, '<=')) {
+            $this->components->info("MelaCMS {$from} is the newest version.");
+
+            return null;
+        }
+
+        $this->components->info("Updating MelaCMS {$from} → {$latest}");
+
+        $result = null;
+        $this->components->task('Composer', function () use ($core, $latest, &$result) {
+            $result = $core->update($latest);
+
+            return $result->successful();
+        });
+
+        $to = $core->installed();
+
+        if (! $result->successful() || $to === null || version_compare($to, $from, '<=')) {
+            $this->failed($result, 'Composer did not update MelaCMS. Nothing else was changed.');
+
+            return self::FAILURE;
+        }
+
+        // This process still runs the classes of the previous core: the new
+        // one is applied by its own code, in a fresh process.
+        $applied = Process::path($project->path())->forever()->run(
+            array_filter([php_binary(), 'artisan', 'mela:update', '--installed', $this->output->isDecorated() ? '--ansi' : null]),
+            fn (string $type, string $output) => $this->output->write($output),
+        );
+
+        if ($applied->failed()) {
+            $this->components->error("MelaCMS {$to} is installed, but applying it failed. Fix the error above and run `php artisan mela:update` again.");
+
+            return self::FAILURE;
+        }
+
+        if ($entries = $changelog->between($from, $to)) {
+            $this->components->info("What's new in MelaCMS {$to}");
+            $this->components->bulletList($entries);
+        }
+
+        $this->components->info('Commit the changes and release the site as usual:');
+        $this->line("  fix: update MelaCMS to {$to}");
+        $this->newLine();
+
+        return self::SUCCESS;
+    }
+
+    private function apply(Roles $roles, ComposerScripts $composerScripts, StubPublisher $stubs, AgentGuide $agentGuide, StorageLink $storageLink): int
+    {
         $this->call('migrate');
         $roles->sync();
         $composerScripts->ensureFilamentUpgrade();
@@ -76,5 +165,15 @@ class UpdateCommand extends Command
         $this->components->bulletList(['Run `php artisan mela:update` and commit the result.']);
 
         return self::FAILURE;
+    }
+
+    private function failed(?ProcessResult $result, string $message): void
+    {
+        if ($result !== null && ($output = trim($result->errorOutput() ?: $result->output())) !== '') {
+            $this->newLine();
+            $this->line($output);
+        }
+
+        $this->components->error($message);
     }
 }

@@ -74,7 +74,7 @@ An entity is content of this site that is not a page: a service, a post, a proje
 | Tests | `php artisan test` |
 | Format PHP | `vendor/bin/pint` |
 | Check formatting (what CI runs) | `vendor/bin/pint --test` |
-| Update the CMS core | `composer update melasistema/mela-cms && php artisan mela:update` |
+| Update the CMS core (Composer included) | `php artisan mela:update` |
 
 ### Git, releases and deploys
 

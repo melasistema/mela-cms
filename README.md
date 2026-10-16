@@ -761,24 +761,29 @@ To change the screen, extend `Melasistema\MelaCms\Filament\Resources\Media\Media
 
 ## Updating the core
 
-On your machine, in the site:
+On your machine, in the site, on the `development` branch:
 
 ```bash
-composer update melasistema/mela-cms
 php artisan mela:update
 ```
 
-While the core is below `1.0`, a new minor version is outside the constraint (`^0.2` does not allow `0.3.0`). Raise it instead: `composer require melasistema/mela-cms:^0.3`.
+One command does the whole update:
 
-`mela:update` runs new core migrations, restores any missing core role, links `public/storage` if the link is missing and refreshes the MelaCMS section of `AGENTS.md` and `CLAUDE.md`. It never overwrites a file the site owns: it lists the workflow files that differ from the core templates and leaves the decision to you. To take the new version of one, copy it from `vendor/melasistema/mela-cms/stubs/`, or run `mela:install` again to review them one by one.
+1. It asks Composer for the newest MelaCMS release and requires it, raising the constraint when needed. While the core is below `1.0`, `^0.5` does not allow `0.6.0`, so a plain `composer update` would stay behind.
+2. It applies the new version in a fresh process, with the new core's own code: new migrations, any missing core role, the `public/storage` link and the MelaCMS section of `AGENTS.md` and `CLAUDE.md`.
+3. It lists what's new since your version, read from the core's changelog, and prints the commit message, for example `fix: update MelaCMS to 0.5.4`.
 
-Then commit `composer.json`, `composer.lock`, the two agent guides and any workflow file you copied, as a `fix:` (for example `fix: update MelaCMS to 0.3.0`), and release the site as usual. A `chore:` would not make a release, so nothing would be deployed.
+Commit `composer.json`, `composer.lock` and the two agent guides with that message, then release the site as usual. It must be a `fix:`: a `chore:` would not make a release, so nothing would be deployed.
 
-Never update on the server. The deploy builds `vendor/` from the committed `composer.lock`, so the next deploy would put the old core back, and the new one would have gone live without passing CI.
+When you already have the newest version, the command applies it again, which is harmless. `--installed` skips Composer and applies the core already in `vendor/`, for example without a network connection. Composer is also skipped when the core is not installed from a release (a path repository in development).
+
+`mela:update` never overwrites a file the site owns. It lists the workflow files that differ from the core templates and leaves the decision to you. To take the new version of one, copy it from `vendor/melasistema/mela-cms/stubs/`, or run `mela:install` again to review them one by one.
+
+Never update on the server. The deploy builds `vendor/` from the committed `composer.lock`, so the next deploy would put the old core back, and the new one would have gone live without passing CI. On a production environment `mela:update` does not look for a new version.
 
 ### With Dependabot
 
-The installed `.github/dependabot.yml` opens a pull request on the site whenever a new core version is released, with the constraint raised and CI already run. It replaces the Composer command, not the rest: the agent guides still describe the previous version. Check out its branch, run `composer install` and `php artisan mela:update`, and commit the agent guides to it. Without `composer install` first, `mela:update` works on the old core still in `vendor/` and finds nothing to do.
+The installed `.github/dependabot.yml` opens a pull request on the site whenever a new core version is released, with the constraint raised and CI already run. It tells you a release is out but does not apply it: the agent guides still describe the previous version. Check out its branch, run `php artisan mela:update` and commit the result to it. Or close the pull request and run `mela:update` on `development`, which does everything.
 
 The site's CI makes sure this is not forgotten: it runs `php artisan mela:update --check`, which changes nothing and fails while the MelaCMS section of `AGENTS.md` or `CLAUDE.md` does not match the installed core. The pull request stays red until the guides are committed. A workflow file that differs from the core template does not fail the check, since it can be your own change.
 
