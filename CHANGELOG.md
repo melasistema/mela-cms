@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/melasistema/mela-cms/compare/v0.11.0...v0.12.0) (2026-10-16)
+
+
+### Features
+
+* show a placeholder at the root until a home page is chosen ([ab74ddb](https://github.com/melasistema/mela-cms/commit/ab74ddb6d8363f7b74d848971e956de023c9c149))
+
 ## [0.11.0](https://github.com/melasistema/mela-cms/compare/v0.10.0...v0.11.0) (2026-10-16)
 
 
