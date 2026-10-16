@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/melasistema/mela-cms/compare/v0.10.0...v0.11.0) (2026-10-16)
+
+
+### Features
+
+* warn on the Settings page when a site route takes the home page address ([55f0686](https://github.com/melasistema/mela-cms/commit/55f068645bcc08b6f28360423a071becca1957da))
+
 ## [0.10.0](https://github.com/melasistema/mela-cms/compare/v0.9.1...v0.10.0) (2026-10-16)
 
 
