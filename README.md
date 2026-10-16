@@ -62,7 +62,6 @@ Requires PHP 8.4 with `intl` and GD or Imagick, Laravel 13, and Node 24 for the 
 
 ```bash
 laravel new client-site && cd client-site
-composer config repositories.mela-cms vcs https://github.com/melasistema/mela-cms
 composer require melasistema/mela-cms
 php artisan mela:install
 ```
@@ -70,7 +69,7 @@ php artisan mela:install
 Open `/admin` and log in with the account you just created.
 
 > [!IMPORTANT]
-> The package is private for now and not on Packagist, which is why the `repositories` line is there. Composer and the site's workflows need a read-only GitHub token: the [installation guide](https://docs.mela-cms.melasistema.com/v1/guide/setup) lists where it goes, and the PHP version pin every site needs before its first push.
+> Before the site's first push, pin the PHP version of your server in `composer.json`. The [installation guide](https://docs.mela-cms.melasistema.com/v1/guide/setup) shows how, and why Dependabot needs it.
 
 ## Documentation
 

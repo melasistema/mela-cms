@@ -16,9 +16,6 @@ on:
       - development
       - master
   workflow_call:
-    secrets:
-      COMPOSER_AUTH:
-        required: false
 
 # Least privilege: nothing here writes back to the repo.
 permissions:
@@ -38,10 +35,6 @@ jobs:
           tools: composer:v2
 
       - name: Install Composer dependencies
-        # Only needed while melasistema/mela-cms is a private repository: a
-        # token that can read it. Empty and ignored once the package is public.
-        env:
-          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
         run: composer install --no-interaction --prefer-dist --no-progress
 
       # Check-only: fails the build on violations, never modifies files.
@@ -68,10 +61,6 @@ jobs:
           cache: 'npm'
 
       - name: Install Composer dependencies
-        # Only needed while melasistema/mela-cms is a private repository: a
-        # token that can read it. Empty and ignored once the package is public.
-        env:
-          COMPOSER_AUTH: ${{ secrets.COMPOSER_AUTH }}
         run: composer install --no-interaction --prefer-dist --no-progress
 
       - name: Install Node dependencies

@@ -148,14 +148,18 @@ it('keeps a project file that was changed, unless forced', function () {
     expect(file_get_contents($this->projectFile('.github/dependabot.yml')))->not->toBe('mine');
 });
 
-it('lets Dependabot read the private core', function () {
+it('installs the core from Packagist, without a token', function () {
     $this->install();
 
     expect(file_get_contents($this->projectFile('.github/dependabot.yml')))
-        ->toContain("registries:\n  mela-cms:\n")
-        ->toContain('password: ${{ secrets.COMPOSER_TOKEN }}')
-        ->toContain("    registries:\n      - mela-cms\n")
-        ->not->toContain('# registries:');
+        ->toContain('dependency-name: melasistema/mela-cms')
+        ->not->toContain('registries:')
+        ->not->toContain('COMPOSER_TOKEN');
+
+    foreach (['ci', 'release', 'deploy'] as $workflow) {
+        expect(file_get_contents($this->projectFile(".github/workflows/{$workflow}.yml")))
+            ->not->toContain('COMPOSER_AUTH');
+    }
 });
 
 it('gives an existing account the role without changing its password', function () {
