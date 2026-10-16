@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs>
+  <clipPath id="mela-clip"><circle cx="256" cy="256" r="200"/></clipPath>
+  <mask id="mela-m"><polyline points="96,500 176,150 256,350 336,150 416,500" fill="none" stroke="white" stroke-width="50" stroke-linejoin="miter" stroke-miterlimit="10"/></mask>
+  <linearGradient id="mela-g" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#1D6FA5"/><stop offset="1" stop-color="#38BDF8"/>
+  </linearGradient></defs>
+  <circle cx="256" cy="256" r="222" fill="none" stroke="url(#mela-g)" stroke-width="30"/>
+  <g clip-path="url(#mela-clip)"><g mask="url(#mela-m)">
+    <rect width="512" height="512" fill="#0B1622"/>
+    <rect x="176" width="80" height="512" fill="#1D6FA5"/>
+    <rect x="336" width="176" height="512" fill="#1D6FA5"/>
+  </g></g></svg>
