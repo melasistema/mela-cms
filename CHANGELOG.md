@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/melasistema/mela-cms/compare/v0.9.1...v0.10.0) (2026-10-16)
+
+
+### Features
+
+* remove the stock welcome route on install, so the home page chosen in the panel is served ([#28](https://github.com/melasistema/mela-cms/issues/28)) ([e46e0ee](https://github.com/melasistema/mela-cms/commit/e46e0ee267e29365a7ca7b509f4912bc47d421c9))
+
 ## [0.9.1](https://github.com/melasistema/mela-cms/compare/v0.9.0...v0.9.1) (2026-10-16)
 
 
