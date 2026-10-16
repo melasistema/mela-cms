@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/melasistema/mela-cms/compare/v0.8.0...v0.8.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* let Dependabot read the private core without editing its config ([31ea2aa](https://github.com/melasistema/mela-cms/commit/31ea2aa46209da90bf5981f974e081723cd0dfa7))
+
 ## [0.8.0](https://github.com/melasistema/mela-cms/compare/v0.7.0...v0.8.0) (2026-10-16)
 
 
