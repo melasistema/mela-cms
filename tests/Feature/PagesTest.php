@@ -447,6 +447,16 @@ it('lets an admin choose the home page', function () {
     Livewire::test(ListPages::class)->assertSee('Home page');
 });
 
+it('warns on the Settings page when a route of the site takes the root', function () {
+    $this->actingAs(pageUser(Role::Admin));
+
+    Livewire::test(ManageSettings::class)->assertDontSee('The site has its own route for /');
+
+    Route::get('/', fn () => 'the site home');
+
+    Livewire::test(ManageSettings::class)->assertSee('The site has its own route for /');
+});
+
 it('adds an image of the text to the media library', function () {
     $this->actingAs(pageUser(Role::Editor));
 

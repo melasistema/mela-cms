@@ -8,10 +8,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Melasistema\MelaCms\Languages;
+use Melasistema\MelaCms\SiteRoutes;
 
 /**
  * A form field for the slug of a record: lowercase letters, numbers and
@@ -122,20 +121,11 @@ class SlugInput extends TextInput
 
     /**
      * Whether a route of the site answers the address. Pages are served by
-     * the fallback route, so the page would never be shown. A route for
-     * another method counts: Laravel answers a visit with a 405.
+     * the fallback route, so the page would never be shown.
      */
     protected function hasRoute(string $path): bool
     {
-        $request = Request::create(request()->getSchemeAndHttpHost().'/'.$path);
-
-        foreach (Route::getRoutes() as $route) {
-            if (! $route->isFallback && $route->matches($request, includingMethod: false)) {
-                return true;
-            }
-        }
-
-        return false;
+        return SiteRoutes::answer($path);
     }
 
     /**

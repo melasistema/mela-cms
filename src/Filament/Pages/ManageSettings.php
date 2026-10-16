@@ -27,6 +27,7 @@ use Melasistema\MelaCms\Install\CoreVersion;
 use Melasistema\MelaCms\Models\Page;
 use Melasistema\MelaCms\Seo;
 use Melasistema\MelaCms\Settings;
+use Melasistema\MelaCms\SiteRoutes;
 use RuntimeException;
 
 /**
@@ -82,7 +83,12 @@ class ManageSettings extends SettingsPage
                         ->helperText('The page shown at the root of the site.')
                         ->options(fn (): array => Page::query()->get()->mapWithKeys(fn (Page $page): array => [$page->getKey() => $page->title])->all())
                         ->searchable()
-                        ->visible(fn (): bool => (bool) config('mela-cms.public_pages') && config('mela-cms.resources.pages') !== null),
+                        ->visible(fn (): bool => static::servesPages()),
+                    Callout::make('The site has its own route for /')
+                        ->key('home_route')
+                        ->description('So the page chosen here is not shown at the root of the site. To show it, a developer removes the / route from routes/web.php.')
+                        ->warning()
+                        ->visible(fn (): bool => static::servesPages() && SiteRoutes::answer('/')),
                     MediaPicker::make('share_image')
                         ->label('Share image')
                         ->helperText('Shown when a page without an image of its own is shared on a social network.')
@@ -127,6 +133,14 @@ class ManageSettings extends SettingsPage
                     static::socialNetworks(),
                 )),
         ];
+    }
+
+    /**
+     * Whether the site has pages to choose a home page from.
+     */
+    protected static function servesPages(): bool
+    {
+        return (bool) config('mela-cms.public_pages') && config('mela-cms.resources.pages') !== null;
     }
 
     /**
