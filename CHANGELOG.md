@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/melasistema/mela-cms/compare/v0.7.0...v0.8.0) (2026-10-16)
+
+
+### Features
+
+* show the MelaCMS version and what's new on the Settings page ([e20e8c8](https://github.com/melasistema/mela-cms/commit/e20e8c8188be46bbd00e1250160799901445ef1b))
+
 ## [0.7.0](https://github.com/melasistema/mela-cms/compare/v0.6.0...v0.7.0) (2026-10-16)
 
 
