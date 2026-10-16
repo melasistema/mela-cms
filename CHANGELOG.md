@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/melasistema/mela-cms/compare/v0.5.3...v0.6.0) (2026-10-16)
+
+
+### Features
+
+* update the core with one command in mela:update ([ea09262](https://github.com/melasistema/mela-cms/commit/ea09262c84a49e230d9707cf02d36e4148d79904))
+
 ## [0.5.3](https://github.com/melasistema/mela-cms/compare/v0.5.2...v0.5.3) (2026-10-15)
 
 
