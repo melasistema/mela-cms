@@ -54,8 +54,10 @@ class PageController
 
     /**
      * The root while there is no home page to show, instead of a bare 404: on
-     * a new site, the first thing anyone opens. Still answered with a 404, so
-     * nothing is indexed, and the admin is linked only for those who can open it.
+     * a new site, the first thing anyone opens. Answered with a 200, because
+     * the site is up (Laravel's stock test and uptime checks ask `/` for one);
+     * the view tells search engines not to index it. The admin is linked only
+     * for those who can open it.
      */
     private function noHome(Request $request): Response
     {
@@ -65,6 +67,6 @@ class PageController
         return response()->view('mela-cms::pages.no-home', [
             'siteName' => app(Settings::class)->translated('site.name', config('app.name')),
             'adminUrl' => $user instanceof FilamentUser && $user->canAccessPanel($panel) ? url($panel->getPath()) : null,
-        ], 404);
+        ]);
     }
 }

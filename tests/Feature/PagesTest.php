@@ -163,7 +163,7 @@ it('shows a draft to someone who may edit it', function () {
 it('serves the home page at the root of each language', function () {
     $home = page(['title' => ['en' => 'Welcome', 'it' => 'Benvenuti'], 'slug' => ['en' => 'home']]);
 
-    $this->get('/')->assertNotFound()->assertSee('This site has no home page yet.');
+    $this->get('/')->assertOk()->assertSee('This site has no home page yet.');
 
     app(Settings::class)->merge('site', ['home_page' => (string) $home->id]);
 
@@ -179,20 +179,29 @@ it('serves the home page at the root of each language', function () {
 it('shows a placeholder at the root until there is a home page to show', function () {
     app(Settings::class)->merge('site', ['name' => ['en' => 'Studio Mela']]);
 
-    $this->get('/')->assertNotFound()
+    $this->get('/')->assertOk()
         ->assertSee('Studio Mela')
         ->assertSee('This site has no home page yet.')
         ->assertSee('<meta name="robots" content="noindex">', false)
         ->assertDontSee('Settings page');
-    $this->get('/it')->assertNotFound()->assertSee('This site has no home page yet.');
+    $this->get('/it')->assertOk()->assertSee('This site has no home page yet.');
 
     $draft = page(['published_at' => null]);
     app(Settings::class)->merge('site', ['home_page' => (string) $draft->id]);
 
-    $this->get('/')->assertNotFound()->assertSee('This site has no home page yet.');
+    $this->get('/')->assertOk()->assertSee('This site has no home page yet.');
 
     // Someone who may edit the draft sees it, to check it before publishing.
     $this->actingAs(pageUser(Role::Editor))->get('/')->assertOk()->assertSee('About us');
+});
+
+it('shows the placeholder before the migrations have run', function () {
+    // What Laravel's stock ExampleTest meets: `/` asked for a 200 on an empty database.
+    Schema::drop('mela_settings');
+    Schema::drop('mela_pages');
+    app()->forgetScopedInstances();
+
+    $this->get('/')->assertOk()->assertSee('This site has no home page yet.');
 });
 
 it('links the admin from the placeholder for those who can open it', function () {
