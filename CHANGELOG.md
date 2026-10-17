@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/melasistema/mela-cms/compare/v0.12.0...v0.12.1) (2026-10-17)
+
+
+### Bug Fixes
+
+* answer the root placeholder with a 200 so the stock Laravel test passes. ([9a163a9](https://github.com/melasistema/mela-cms/commit/9a163a97196ef0de4fded186c3f9037ad52fbe50))
+
 ## [0.12.0](https://github.com/melasistema/mela-cms/compare/v0.11.0...v0.12.0) (2026-10-16)
 
 
